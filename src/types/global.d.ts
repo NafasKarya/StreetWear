@@ -1,19 +1,25 @@
 // src/types/global.d.ts
-declare namespace JSX {
-  interface IntrinsicElements {
-    "model-viewer": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-      src?: string;
-      alt?: string;
-      cameraControls?: boolean;
-      cameraOrbit?: string;
-      autoRotate?: boolean;
-      rotation?: string;
-      exposure?: string;
-      interactionPrompt?: string;
-      backgroundColor?: string;
-      disableZoom?: boolean;
-      disablePan?: boolean;
-      [key: string]: any;
-    };
+import * as React from "react";
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      "model-viewer": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        src?: string;
+        alt?: string;
+        "camera-controls"?: boolean;
+        "camera-orbit"?: string;
+        "auto-rotate"?: boolean;
+        rotation?: string;
+        style?: React.CSSProperties;
+        exposure?: string;
+        "interaction-prompt"?: string;
+        "background-color"?: string;
+        "disable-zoom"?: boolean;
+        "disable-pan"?: boolean;
+        [key: string]: any;
+      };
+    }
   }
 }
+export {};
