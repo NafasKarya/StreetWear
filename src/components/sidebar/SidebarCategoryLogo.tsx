@@ -16,19 +16,20 @@ const SidebarLogo3D = () => {
   return (
     <div className="flex flex-col items-center w-full pt-0 mt-0 mb-2">
       <div className="flex justify-center items-center">
-        <model-viewer
-          src="/matrix/base.glb"
-          camera-controls
-          camera-orbit="-90deg 80deg 5m"
-          auto-rotate
-          rotation="0deg 90deg 0deg"
-          style={{ width: "130px", height: "130px" }}
-          exposure="1"
-          interaction-prompt="none"
-          background-color="#000000"
-          disable-zoom
-          disable-pan
-        ></model-viewer>
+<model-viewer
+  src="/matrix/base.glb"
+  camera-controls
+  camera-orbit="-90deg 80deg 5m"
+  auto-rotate
+  rotation="0deg 90deg 0deg"
+  style={{ width: "130px", height: "130px" }}
+  exposure="1"
+  interaction-prompt="none"
+  background-color="#000000"
+  disable-zoom
+  disable-pan
+></model-viewer>
+
       </div>
     </div>
   );
