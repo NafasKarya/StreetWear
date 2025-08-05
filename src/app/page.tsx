@@ -50,7 +50,7 @@ export default function Home() {
   // User biasa: render app normal
   return (
     <CartProvider>
-      <Header onCheckout={() => setShowCheckout(true)} />
+      {/* <Header onCheckout={() => setShowCheckout(true)} /> */}
       {showCheckout ? (
         <Checkout onBack={() => setShowCheckout(false)} />
       ) : (

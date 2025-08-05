@@ -40,56 +40,93 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <main className="w-full max-w-md mx-auto flex flex-col items-center px-4">
-        <h1 className="font-extrabold uppercase mb-2 text-center">LOG IN</h1>
-        <form className="w-full flex flex-col gap-4" onSubmit={handleSubmit} autoComplete="off">
-          {error && <div className="mb-3 text-red-500">{error}</div>}
-          <input
-            id="credential"
-            type="text"
-            placeholder="Username atau Email"
-            value={credential}
-            onChange={e => setCredential(e.target.value)}
-            disabled={loading}
-            autoComplete="username"
-            required
-          />
-          <div className="relative">
-            <input
-              id="password"
-              type={showPass ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
+    <div
+      className="relative min-h-screen bg-center bg-cover"
+      style={{ backgroundImage: "url('/assets/login-bg.jpg')" }}
+    >
+      {/* overlay gelap */}
+      <div className="absolute inset-0 bg-black bg-opacity-60" />
+
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
+        <div className="w-full max-w-md text-center">
+          <h1 className="text-5xl font-extrabold text-white uppercase">LOG IN</h1>
+          <p className="mt-2 text-lg text-gray-300">Welcome back, bestie!</p>
+
+          <form
+            className="mt-8 space-y-4"
+            onSubmit={handleSubmit}
+            autoComplete="off"
+          >
+            {error && <p className="text-red-500">{error}</p>}
+
+            <div>
+              <input
+                id="credential"
+                type="text"
+                placeholder="Your email"
+                value={credential}
+                onChange={e => setCredential(e.target.value)}
+                disabled={loading}
+                autoComplete="username"
+                required
+                className="w-full px-4 py-3 rounded bg-white placeholder-gray-500 focus:outline-none"
+              />
+            </div>
+
+            <div className="relative">
+              <input
+                id="password"
+                type={showPass ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                disabled={loading}
+                autoComplete="current-password"
+                required
+                className="w-full px-4 py-3 rounded bg-white placeholder-gray-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600"
+                onClick={() => setShowPass(v => !v)}
+                tabIndex={-1}
+                disabled={loading}
+              >
+                {showPass ? "🙈" : "👁️"}
+              </button>
+            </div>
+
+            <div className="text-right">
+              <button
+                type="button"
+                className="text-sm text-gray-200 underline"
+                onClick={() => { /* panggil modal/lupa password */ }}
+              >
+                Forgot password?
+              </button>
+            </div>
+
+            <button
+              type="submit"
               disabled={loading}
-              autoComplete="current-password"
-              required
-            />
+              className="w-full py-3 bg-black text-white font-semibold rounded hover:bg-gray-800"
+            >
+              {loading ? "LOGGING IN..." : "LOG IN"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-sm text-gray-200">
+            Don't have an account yet?{" "}
             <button
               type="button"
-              className="absolute right-2 top-1/2 -translate-y-1/2"
-              onClick={() => setShowPass(v => !v)}
-              tabIndex={-1}
-              disabled={loading}
+              onClick={onSwitchToRegister}
+              className="underline font-semibold"
             >
-              {showPass ? "🙈" : "👁️"}
+              Sign up
             </button>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? "LOGGING IN..." : "LOG IN"}
-          </button>
-        </form>
-        <div className="mt-5 text-sm text-center">
-          Belum punya akun?{" "}
-          <button type="button" onClick={onSwitchToRegister} className="underline font-semibold">
-            Register
-          </button>
+          </p>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

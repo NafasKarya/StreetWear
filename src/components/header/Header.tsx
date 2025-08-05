@@ -23,12 +23,16 @@ const SearchIcon = ({ size = 28, ...props }) => (
 import { getCurrentUser } from "@/logic/authLocal";
 import AuthButtons from "./AuthButtons";
 
+// Tambahkan di interface HeaderProps
 interface HeaderProps {
     onMenuClick?: () => void;
     onCheckout?: () => void;
+    onSearch?: (q: string) => void; // <--- Tambahan
 }
 
-const Header: React.FC<HeaderProps> = ({ onMenuClick, onCheckout }) => {
+
+const Header: React.FC<HeaderProps> = ({ onMenuClick, onCheckout, onSearch }) => {
+
     const [searchQuery, setSearchQuery] = useState("");
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const router = useRouter();
@@ -57,7 +61,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onCheckout }) => {
                                 <input
                                     type="text"
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        onSearch?.(e.target.value); // <--- panggil prop onSearch tiap kali berubah
+                                    }}
                                     placeholder="Search"
                                     className="bg-transparent border-b-2 border-yellow-400 focus:border-yellow-300 text-yellow-400 placeholder-yellow-400/60 outline-none w-48 transition-all"
                                 />
