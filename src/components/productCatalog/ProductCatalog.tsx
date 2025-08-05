@@ -6,7 +6,7 @@ import Marquee from "../marqueeBanner/Marquee";
 import { getCurrentUser } from "@/logic/authLocal";
 import AdminImageCardProduct from "./AdminImageCardProduct";
 import MobileMenuProduct from "./MobileMenuProduct";
-import Header from "../header/Header"; // --- PASTIKAN IMPORT HEADER VERSI BARU
+import Header from "../header/Header";
 
 import {
   ProductImage,
@@ -125,6 +125,7 @@ const FourteenProduct = () => {
                           editingTitle,
                           titleInput,
                           setEditingTitle,
+                          setAdminImages: setFilteredProducts, // <-- Fix disini!
                           currentUser
                         })
                       }
@@ -134,6 +135,7 @@ const FourteenProduct = () => {
                             editingTitle,
                             titleInput,
                             setEditingTitle,
+                            setAdminImages: setFilteredProducts, // <-- Fix juga disini!
                             currentUser
                           });
                         }
@@ -167,7 +169,6 @@ const FourteenProduct = () => {
                             ? () => handleDeleteProduct(img.id, currentUser, setFilteredProducts)
                             : undefined
                         }
-                        // === Tambah onClick: buka detail ===
                         onClick={() => setSelectedProduct(img)}
                       />
                     ))}
