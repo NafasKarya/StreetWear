@@ -12,7 +12,7 @@ import {
   ProductImage,
   getAvailableProductImages,
   getAllProductTitles,
-  searchProductImages,    // <--- IMPORT FUNGSI SEARCH BARU
+  searchProductImages,
 } from "@/logic/productLogic";
 import {
   groupByTitle,
@@ -52,10 +52,8 @@ const FourteenProduct = () => {
 
   // Search logic (biar search live)
   const handleSearch = useCallback((query: string) => {
-    // Pake logic pencarian custom
     let products: ProductImage[] = [];
     if (query.trim() === "") {
-      // Tampilkan semua kalau query kosong
       products = getAvailableProductImages(currentUser?.role) as ProductImage[];
     } else {
       products = searchProductImages(query);
@@ -69,17 +67,16 @@ const FourteenProduct = () => {
   // --- Render detail jika ada yang dipilih ---
   if (selectedProduct) {
     return (
-<DetailProduct
-  product={{
-    id: selectedProduct.id,
-    name: selectedProduct.name,
-    price: selectedProduct.price,
-    imageUrl: selectedProduct.frontImage,
-    productDetail: selectedProduct.productDetail || "",
-  }}
-  onBack={() => setSelectedProduct(null)}
-/>
-
+      <DetailProduct
+        product={{
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          price: selectedProduct.price,
+          imageUrl: selectedProduct.frontImage,
+          productDetail: selectedProduct.productDetail || "",
+        }}
+        onBack={() => setSelectedProduct(null)}
+      />
     );
   }
 
@@ -125,13 +122,19 @@ const FourteenProduct = () => {
                       onChange={e => setTitleInput(e.target.value)}
                       onBlur={() =>
                         submitRenameTitleProduct({
-                          editingTitle, titleInput, setEditingTitle, setFilteredProducts, currentUser
+                          editingTitle,
+                          titleInput,
+                          setEditingTitle,
+                          currentUser
                         })
                       }
                       onKeyDown={e => {
                         if (e.key === "Enter" || e.key === "Escape") {
                           submitRenameTitleProduct({
-                            editingTitle, titleInput, setEditingTitle, setFilteredProducts, currentUser
+                            editingTitle,
+                            titleInput,
+                            setEditingTitle,
+                            currentUser
                           });
                         }
                       }}
