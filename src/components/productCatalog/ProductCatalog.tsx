@@ -1,68 +1,81 @@
-import React, { useState } from "react";
+"use client";
+import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import SidebarCategoryLogo from "../sidebar/SidebarCategoryLogo";
-import DetailProduct from "./DetailPorduct";
 import Marquee from "../marqueeBanner/Marquee";
+import { getCurrentUser } from "@/logic/authLocal";
+import AdminImageCardProduct from "./AdminImageCardProduct";
+import MobileMenuProduct from "./MobileMenuProduct";
+import Header from "../header/Header"; // --- PASTIKAN IMPORT HEADER VERSI BARU
 
-
-// Icon Close (untuk MobileMenu)
-const FiX = ({ size = 28, ...props }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
-
-interface Product {
-  id: number;
-  name: string;
-  price: string;
-  imageUrl: string;
-}
-
-const products: Product[] = [
-  { id: 1, name: 'CREST ARCH TRACK JACKET [BLACK]', price: 'Rp1.950.000', imageUrl: 'https://i.pinimg.com/1200x/1e/a0/f6/1ea0f62df0669837081ed5bd9d285b80.jpg' },
-  { id: 2, name: 'CREST ARCH TRACK PANT [BLACK]', price: 'Rp1.800.000', imageUrl: 'https://i.pinimg.com/1200x/51/d0/07/51d00783bc9220a4053a60dd407c267a.jpg' },
-  { id: 3, name: 'PANELED RUGBY [RED]', price: 'Rp1.700.000', imageUrl: 'https://i.pinimg.com/736x/2d/98/61/2d98612f88f42b32ad322cbcca1de825.jpg' },
-  { id: 4, name: 'LEATHER RACER [BLACK]', price: 'Rp6.800.000', imageUrl: 'https://i.pinimg.com/1200x/e9/df/5a/e9df5ad7799b6733bacfdec3640acc85.jpg' },
-  { id: 5, name: '4STARZ ALCATRAZ T-SHIRT [SKY]', price: 'Rp570.000', imageUrl: 'https://i.pinimg.com/1200x/69/71/1d/69711d074b05a22f54899a65828c9bfd.jpg' },
-  { id: 6, name: '4STARZ SKIRT [SKY]', price: 'Rp1.050.000', imageUrl: 'https://i.pinimg.com/1200x/bc/66/c0/bc66c0e325a998df25957c0e2897f574.jpg' },
-];
-
-const ProductCard = ({ name, price, imageUrl, onClick }: Product & { onClick: () => void }) => (
-  <div className="group cursor-pointer" onClick={onClick}>
-    <div className="bg-neutral-900 overflow-hidden rounded-xl aspect-[4/5] sm:aspect-[3/4] md:aspect-square min-h-[200px] sm:min-h-[260px] md:min-h-[230px] transition-all duration-300 group-hover:shadow-lg group-hover:shadow-yellow-500/10">
-      <img src={imageUrl} alt={name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-    </div>
-    <div className="text-center mt-4 px-2">
-      <p className="text-sm text-gray-300 tracking-wider uppercase">{name}</p>
-      <p className="mt-1 text-base text-white tracking-wider">{price}</p>
-    </div>
-  </div>
-);
-
-const MobileMenu = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 bg-black p-8 md:hidden animate-fade-in">
-      <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors" aria-label="Tutup menu">
-        <FiX size={28} />
-      </button>
-      <div className="mt-16">
-        <SidebarCategoryLogo onLinkClick={onClose} />
-      </div>
-    </div>
-  );
-};
+import {
+  ProductImage,
+  getAvailableProductImages,
+  getAllProductTitles,
+  searchProductImages,    // <--- IMPORT FUNGSI SEARCH BARU
+} from "@/logic/productLogic";
+import {
+  groupByTitle,
+  handleDeleteProduct,
+  handleTitleClickProduct,
+  submitRenameTitleProduct
+} from "@/models/productLogicLocal";
+import DetailProduct from "./DetailPorduct";
 
 const FourteenProduct = () => {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [allTitles, setAllTitles] = useState<string[]>([]);
+  const [title, setTitle] = useState("");
+  const [useManualTitle, setUseManualTitle] = useState(false);
+  const [editingTitle, setEditingTitle] = useState<string | null>(null);
+  const [titleInput, setTitleInput] = useState<string>("");
 
-  // Kalau user pilih produk, tampilkan detail produk
+  const currentUser = getCurrentUser();
+
+  // --- Detail ---
+  const [selectedProduct, setSelectedProduct] = useState<ProductImage | null>(null);
+
+  // --- State produk (search result) ---
+  const [filteredProducts, setFilteredProducts] = useState<ProductImage[]>([]);
+
+  // Fetch initial product list
+  useEffect(() => {
+    const data = getAvailableProductImages(currentUser?.role) as ProductImage[];
+    setFilteredProducts(data);
+  }, [currentUser?.role]);
+
+  // Fetch all titles (optional, kalau mau dipakai buat filter by title)
+  useEffect(() => {
+    setAllTitles(getAllProductTitles());
+  }, [filteredProducts]);
+
+  // Search logic (biar search live)
+  const handleSearch = useCallback((query: string) => {
+    // Pake logic pencarian custom
+    let products: ProductImage[] = [];
+    if (query.trim() === "") {
+      // Tampilkan semua kalau query kosong
+      products = getAvailableProductImages(currentUser?.role) as ProductImage[];
+    } else {
+      products = searchProductImages(query);
+    }
+    setFilteredProducts(products);
+  }, [currentUser?.role]);
+
+  // Kelompokkan produk by title (category) -- hasil search, bukan semua
+  const groupedProducts = groupByTitle(filteredProducts);
+
+  // --- Render detail jika ada yang dipilih ---
   if (selectedProduct) {
     return (
       <DetailProduct
-        product={selectedProduct}
+        product={{
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          price: selectedProduct.price,
+          imageUrl: selectedProduct.frontImage
+        }}
         onBack={() => setSelectedProduct(null)}
       />
     );
@@ -70,28 +83,93 @@ const FourteenProduct = () => {
 
   return (
     <div className="bg-black min-h-screen text-gray-300 font-mono">
-      {/* TIDAK ADA HEADER DI SINI */}
+      {/* HEADER + SEARCH */}
+      <Header onSearch={handleSearch} />
 
-      {/* MARQUEE */}
       <Marquee />
-
-      <MobileMenu isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-
+      <MobileMenuProduct isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
       <div className="container mx-auto px-4 sm:px-8 pt-0 pb-8">
         <div className="flex flex-row gap-12 items-start mt-8 pt-0">
           <aside className="w-1/6 pr-4 hidden md:flex flex-col items-center pt-0 mt-0 sticky top-28">
             <SidebarCategoryLogo />
           </aside>
           <main className="w-full md:w-5/6">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12 sm:gap-x-8 sm:gap-y-16">
-              {products.map((product, index) => (
-                <ProductCard
-                  key={`${product.id}-${index}`}
-                  {...product}
-                  onClick={() => setSelectedProduct(product)}
-                />
-              ))}
-            </div>
+            {/* ADMIN POST PRODUCT BUTTON */}
+            {currentUser?.role === "admin" && (
+              <div className="mb-10">
+                <button
+                  className="px-5 py-2 rounded bg-yellow-400 text-black font-bold hover:bg-yellow-300 active:scale-95 transition-all"
+                  onClick={() => {
+                    router.push("/admins/upload");
+                  }}
+                >
+                  Post Product
+                </button>
+              </div>
+            )}
+
+            {/* DAFTAR PRODUK (GROUPED BY TITLE, FILTERED) */}
+            {Object.entries(groupedProducts).length === 0 ? (
+              <p className="text-gray-500 italic">Belum ada produk yang cocok</p>
+            ) : (
+              Object.entries(groupedProducts).map(([title, products]) => (
+                <div key={title} className="mb-10">
+                  {/* TITLE BISA DI-RENAME */}
+                  {editingTitle === title && currentUser?.role === "admin" ? (
+                    <input
+                      type="text"
+                      value={titleInput}
+                      autoFocus
+                      onChange={e => setTitleInput(e.target.value)}
+                      onBlur={() =>
+                        submitRenameTitleProduct({
+                          editingTitle, titleInput, setEditingTitle, setFilteredProducts, currentUser
+                        })
+                      }
+                      onKeyDown={e => {
+                        if (e.key === "Enter" || e.key === "Escape") {
+                          submitRenameTitleProduct({
+                            editingTitle, titleInput, setEditingTitle, setFilteredProducts, currentUser
+                          });
+                        }
+                      }}
+                      className="text-xl font-bold text-yellow-400 mb-4 mt-8 bg-neutral-900 px-2 py-1 rounded outline-none border border-yellow-300"
+                      style={{ minWidth: 100 }}
+                    />
+                  ) : (
+                    <h3
+                      className={`text-xl font-bold text-yellow-400 mb-4 mt-8 cursor-pointer hover:underline ${currentUser?.role === "admin" ? "" : "pointer-events-none"}`}
+                      tabIndex={currentUser?.role === "admin" ? 0 : -1}
+                      onClick={() =>
+                        handleTitleClickProduct(title, currentUser, setEditingTitle, setTitleInput)
+                      }
+                      onKeyDown={e => {
+                        if (e.key === "Enter")
+                          handleTitleClickProduct(title, currentUser, setEditingTitle, setTitleInput);
+                      }}
+                    >
+                      {title}
+                    </h3>
+                  )}
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12 sm:gap-x-8 sm:gap-y-16">
+                    {products.map((img: any) => (
+                      <AdminImageCardProduct
+                        key={img.id}
+                        {...img}
+                        isAdmin={currentUser?.role === "admin"}
+                        onDelete={
+                          currentUser?.role === "admin"
+                            ? () => handleDeleteProduct(img.id, currentUser, setFilteredProducts)
+                            : undefined
+                        }
+                        // === Tambah onClick: buka detail ===
+                        onClick={() => setSelectedProduct(img)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </main>
         </div>
       </div>
