@@ -69,15 +69,17 @@ const FourteenProduct = () => {
   // --- Render detail jika ada yang dipilih ---
   if (selectedProduct) {
     return (
-      <DetailProduct
-        product={{
-          id: selectedProduct.id,
-          name: selectedProduct.name,
-          price: selectedProduct.price,
-          imageUrl: selectedProduct.frontImage
-        }}
-        onBack={() => setSelectedProduct(null)}
-      />
+<DetailProduct
+  product={{
+    id: selectedProduct.id,
+    name: selectedProduct.name,
+    price: selectedProduct.price,
+    imageUrl: selectedProduct.frontImage,
+    productDetail: selectedProduct.productDetail || "",
+  }}
+  onBack={() => setSelectedProduct(null)}
+/>
+
     );
   }
 
