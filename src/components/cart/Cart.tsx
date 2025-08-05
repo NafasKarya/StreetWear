@@ -8,7 +8,8 @@ function parseHarga(str: string) {
   return parseInt(str.replace(/[^\d]/g, ""), 10) || 0;
 }
 
-const Cart: React.FC<{ onCheckout: () => void }> = ({ onCheckout }) => {
+// Perbaikan: onCheckout dibuat opsional
+const Cart: React.FC<{ onCheckout?: () => void }> = ({ onCheckout }) => {
   const { items, open, openCart, closeCart, removeFromCart, addQty } = useCart();
   const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
   const totalPrice = items.reduce(
@@ -124,7 +125,7 @@ const Cart: React.FC<{ onCheckout: () => void }> = ({ onCheckout }) => {
                 disabled={items.length === 0}
                 onClick={() => {
                   closeCart();
-                  onCheckout();
+                  onCheckout?.();
                 }}
               >
                 Checkout
