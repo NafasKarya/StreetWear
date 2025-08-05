@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useCart } from '../cart/CartContext';
-import Header from '../header/Header'; // <--- Tambahan import Header
+import Header from '../header/Header';
 
 const categories = [
   "NEW", "T-SHIRTS", "TOPS / JERSEYS", "SWEATSHIRTS", "JACKETS",
@@ -39,8 +39,16 @@ export default function DetailProduct({ product, onBack }: DetailProductProps) {
   const images = [product.imageUrl];
   const imgRef = useRef<HTMLImageElement | null>(null);
 
+  // --- FIX: Perbaikan logika handleNext
   const handlePrev = () => setActiveIdx(idx => (idx === 0 ? images.length - 1 : idx - 1));
-  const handleNext = () => setActiveIdx(idx => (idx === images.length === 1 ? 0 : idx + 1));
+  const handleNext = () =>
+    setActiveIdx(idx =>
+      images.length === 1
+        ? 0
+        : idx === images.length - 1
+        ? 0
+        : idx + 1
+    );
   const setIdx = (idx: number) => setActiveIdx(idx);
 
   const handleAddToCart = () => {
@@ -90,8 +98,7 @@ export default function DetailProduct({ product, onBack }: DetailProductProps) {
 
   return (
     <div className="bg-black text-yellow-400 min-h-screen font-mono p-0 md:p-0">
-      <Header /> {/* --- Tambahkan header di paling atas --- */}
-
+      <Header />
       <div className="p-4 md:p-8">
         <button onClick={onBack} className="mr-2 text-yellow-400 hover:text-white flex items-center font-bold mb-6 mt-2">
           <svg width={22} height={22} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
@@ -110,7 +117,6 @@ export default function DetailProduct({ product, onBack }: DetailProductProps) {
               <a href="#" className="hover:underline">TERMS OF SERVICE</a>
             </div>
           </aside>
-
           <main className="col-span-1 lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="flex flex-col items-center">
               <div className="relative w-full flex items-center justify-center">
@@ -155,7 +161,6 @@ export default function DetailProduct({ product, onBack }: DetailProductProps) {
                 ))}
               </div>
             </div>
-
             <div className="flex flex-col gap-6">
               <h1 className="text-2xl md:text-3xl font-bold">{product.name}</h1>
               <p className="text-xl">{product.price}</p>
