@@ -20,7 +20,7 @@ import {
   handleTitleClickProduct,
   submitRenameTitleProduct
 } from "@/models/productLogicLocal";
-import DetailProduct from "./DetailPorduct";
+import DetailProduct from "./DetailProduct";
 
 const FourteenProduct = () => {
   const router = useRouter();
