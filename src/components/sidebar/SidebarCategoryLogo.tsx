@@ -19,7 +19,7 @@ const SidebarLogo3D: React.FC = () => {
     <div className="flex flex-col items-center w-full pt-0 mt-0 mb-2" suppressHydrationWarning>
       <div className="flex justify-center items-center">
         <ModelViewer
-          src="/matrix/3D LOGO FOURTENZ REVISI.glb"
+          src="/matrix/base.glb"
           camera-controls
           camera-orbit="-90deg 80deg 5m"
           auto-rotate
