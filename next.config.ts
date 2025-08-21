@@ -1,10 +1,11 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
-  eslint: {
-    ignoreDuringBuilds: true,
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  eslint: { ignoreDuringBuilds: true },
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  async rewrites() {
+    return [
+      { source: "/uploads/:path*", destination: "/uploads/:path*" },
+    ];
   },
 };
-
-export default nextConfig;
+module.exports = nextConfig;

@@ -17,45 +17,45 @@ const RegisterPage: React.FC<Props> = ({ onRegister, onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      if (!username || username.length < 3) {
-        setError("Username minimal 3 karakter.");
-        setLoading(false);
-        return;
-      }
-      if (!email.includes("@")) {
-        setError("Email tidak valid.");
-        setLoading(false);
-        return;
-      }
-      if (password.length < 4) {
-        setError("Password minimal 4 karakter.");
-        setLoading(false);
-        return;
-      }
-      if (password !== repeatPassword) {
-        setError("Password tidak sama.");
-        setLoading(false);
-        return;
-      }
-      await new Promise((r) => setTimeout(r, 700));
-      const res = register(username, email, password);
-      if (!res.ok) {
-        setError(res.msg);
-        setLoading(false);
-        return;
-      }
-      onRegister();
-    } catch {
-      setError("Register gagal, coba lagi.");
-    } finally {
-      setLoading(false);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
+  try {
+    if (!username || username.length < 3) {
+      setError("Username minimal 3 karakter.");
+      return;
     }
-  };
+    if (!email.includes("@")) {
+      setError("Email tidak valid.");
+      return;
+    }
+    if (password.length < 4) {
+      setError("Password minimal 4 karakter.");
+      return;
+    }
+    if (password !== repeatPassword) {
+      setError("Password tidak sama.");
+      return;
+    }
+
+    await new Promise((r) => setTimeout(r, 300)); // optional delay kecil biar UX ada feedback
+
+    // ⬇️ ini kuncinya: AWAIT!
+    const res = await register(username, email, password);
+
+    if (!res.ok) {
+      setError(res.msg || "Register gagal");
+      return;
+    }
+
+    onRegister(); // auto-login lokal sudah dilakukan di register(); tinggal lanjutkan flow
+  } catch {
+    setError("Register gagal, coba lagi.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div

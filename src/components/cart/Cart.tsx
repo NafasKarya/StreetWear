@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useEffect, useRef, useState } from "react";
 import { useCart } from "./CartContext";
+import { useRouter } from "next/navigation";
 
 function formatRupiah(n: number) {
   return "Rp" + n.toLocaleString("id-ID");
@@ -8,26 +11,41 @@ function parseHarga(str: string) {
   return parseInt(str.replace(/[^\d]/g, ""), 10) || 0;
 }
 
-// Perbaikan: onCheckout dibuat opsional
+// helper: balikin null kalau string kosong -> supaya <img src={null}>
+function safeSrc(url: string | undefined | null) {
+  const v = (url ?? "").trim();
+  return v.length > 0 ? v : null;
+}
+
 const Cart: React.FC<{ onCheckout?: () => void }> = ({ onCheckout }) => {
+  const router = useRouter();
   const { items, open, openCart, closeCart, removeFromCart, addQty } = useCart();
+
   const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
   const totalPrice = items.reduce(
-    (sum, item) => sum + parseHarga(item.price) * item.qty, 0
+    (sum, item) => sum + parseHarga(item.price) * item.qty,
+    0
   );
 
-  // Animasi badge: state buat trigger animasi tiap Cart update
   const [cartAnim, setCartAnim] = useState(false);
   const prevQty = useRef(totalQty);
 
   useEffect(() => {
-    // Kalau jumlah Cart nambah, trigger animasi
     if (totalQty > prevQty.current) {
       setCartAnim(true);
-      setTimeout(() => setCartAnim(false), 480); // waktu animasi harus match di css
+      setTimeout(() => setCartAnim(false), 480);
     }
     prevQty.current = totalQty;
   }, [totalQty]);
+
+  const handleAddQty = (id: number, size: string) => addQty(id, size);
+  const handleRemove = (id: number, size: string) => removeFromCart(id, size);
+
+  const goCheckout = () => {
+    closeCart();
+    if (onCheckout) onCheckout();
+    else router.push("/checkout");
+  };
 
   return (
     <>
@@ -54,11 +72,10 @@ const Cart: React.FC<{ onCheckout?: () => void }> = ({ onCheckout }) => {
             75% { transform: scale(1.09);}
             100% { transform: scale(1);}
           }
-          .cart-bounce {
-            animation: cart-bounce 0.48s cubic-bezier(.66,0,.43,1.05);
-          }
+          .cart-bounce { animation: cart-bounce 0.48s cubic-bezier(.66,0,.43,1.05); }
         `}</style>
       </button>
+
       {open && (
         <>
           {/* Overlay */}
@@ -84,54 +101,74 @@ const Cart: React.FC<{ onCheckout?: () => void }> = ({ onCheckout }) => {
                 <svg width={28} height={28} fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
+
             <div className="flex-1 overflow-y-auto p-5">
               {items.length === 0 ? (
                 <div className="text-center text-gray-400 pt-10">Keranjang kosong</div>
               ) : (
-                items.map((item, i) => (
-                  <div key={i} className="mb-6 border-b border-neutral-700 pb-6 flex gap-4 items-center">
-                    <img src={item.imageUrl} className="w-16 h-16 object-cover rounded" alt={item.name} />
-                    <div className="flex-1">
-                      <div className="font-bold text-white text-md tracking-wide">{item.name}</div>
-                      <div className="text-yellow-400 font-bold text-lg">{item.price}</div>
-                      <div className="text-xs text-gray-400 mt-1">Size: {item.size}</div>
-                      <div className="flex items-center gap-2 mt-3">
-                        <button
-                          onClick={() => removeFromCart(item.id, item.size)}
-                          className="bg-neutral-800 w-10 h-10 rounded text-lg font-bold text-yellow-400 hover:text-red-500 transition-colors flex items-center justify-center"
-                          aria-label="Kurangi jumlah"
-                        >-</button>
-                        <span className="text-base font-bold w-8 text-center">{item.qty}</span>
-                        <button
-                          onClick={() => addQty(item.id, item.size)}
-                          className="bg-neutral-800 w-10 h-10 rounded text-lg font-bold text-yellow-400 hover:text-green-400 transition-colors flex items-center justify-center"
-                          aria-label="Tambah jumlah"
-                        >+</button>
+                items.map((item, i) => {
+                  const src = safeSrc(item.imageUrl); // <- aman
+                  return (
+                    <div key={`${item.id}-${item.size}-${i}`} className="mb-6 border-b border-neutral-700 pb-6 flex gap-4 items-center">
+                      {src ? (
+                        <img
+                          src={src}
+                          className="w-16 h-16 object-cover rounded"
+                          alt={item.name || "Produk"}
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded bg-neutral-800 grid place-items-center text-xs text-neutral-400">
+                          No Img
+                        </div>
+                      )}
+
+                      <div className="flex-1">
+                        <div className="font-bold text-white text-md tracking-wide">
+                          {item.name || "Tanpa nama"}
+                        </div>
+                        <div className="text-yellow-400 font-bold text-lg">{item.price}</div>
+                        <div className="text-xs text-gray-400 mt-1">Size: {item.size}</div>
+
+                        <div className="flex items-center gap-2 mt-3">
+                          <button
+                            onClick={() => handleRemove(item.id, item.size)}
+                            className="bg-neutral-800 w-10 h-10 rounded text-lg font-bold text-yellow-400 hover:text-red-500 transition-colors flex items-center justify-center"
+                            aria-label="Kurangi jumlah"
+                          >-</button>
+                          <span className="text-base font-bold w-8 text-center">{item.qty}</span>
+                          <button
+                            onClick={() => handleAddQty(item.id, item.size)}
+                            className="bg-neutral-800 w-10 h-10 rounded text-lg font-bold text-yellow-400 hover:text-green-400 transition-colors flex items-center justify-center"
+                            aria-label="Tambah jumlah"
+                          >+</button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
+
               {items.length > 0 && (
                 <div className="mt-4 mb-2 flex items-center justify-between border-t border-neutral-700 pt-6">
                   <span className="font-bold text-lg text-white">Total</span>
-                  <span className="text-yellow-400 font-extrabold text-xl">{formatRupiah(totalPrice)}</span>
+                  <span className="text-yellow-400 font-extrabold text-xl">
+                    {formatRupiah(totalPrice)}
+                  </span>
                 </div>
               )}
             </div>
+
             <div className="p-5 border-t border-neutral-700">
               <button
                 className="w-full py-3 rounded-xl bg-yellow-400 text-black font-bold text-base hover:bg-yellow-300 transition-colors"
                 disabled={items.length === 0}
-                onClick={() => {
-                  closeCart();
-                  onCheckout?.();
-                }}
+                onClick={goCheckout}
               >
                 Checkout
               </button>
             </div>
           </aside>
+
           <style>{`
             @keyframes slideIn { from { transform: translateX(100%);} to { transform: translateX(0);} }
             .animate-slide-in { animation: slideIn 0.26s cubic-bezier(.77,0,.18,1) }

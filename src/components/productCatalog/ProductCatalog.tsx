@@ -1,184 +1,288 @@
+// src/components/product/FourteenProduct.tsx
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
 import SidebarCategoryLogo from "../sidebar/SidebarCategoryLogo";
 import Marquee from "../marqueeBanner/Marquee";
-import { getCurrentUser } from "@/logic/authLocal";
-import AdminImageCardProduct from "./AdminImageCardProduct";
 import MobileMenuProduct from "./MobileMenuProduct";
 import Header from "../header/Header";
-
-import {
-  ProductImage,
-  getAvailableProductImages,
-  getAllProductTitles,
-  searchProductImages,
-} from "@/logic/productLogic";
-import {
-  groupByTitle,
-  handleDeleteProduct,
-  handleTitleClickProduct,
-  submitRenameTitleProduct
-} from "@/models/productLogicLocal";
 import DetailProduct from "./DetailPorduct";
 
-const FourteenProduct = () => {
+import useAdminGuard from "./hooks/useAdminGuard";
+import { buildImages, getPriceStr } from "./components/utils";
+import AdminActionButtons from "./components/AdminActionButtons";
+
+import ProductGrid from "./components/ProductGrid";
+import { ProductItem } from "./components/types";
+import usePublicProducts from "./hooks/usePublicProducts";
+import AccessCodeBox from "./components/AccessCodeBox";
+
+
+const FourteenProduct: React.FC = () => {
   const router = useRouter();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [allTitles, setAllTitles] = useState<string[]>([]);
-  const [title, setTitle] = useState("");
-  const [useManualTitle, setUseManualTitle] = useState(false);
-  const [editingTitle, setEditingTitle] = useState<string | null>(null);
-  const [titleInput, setTitleInput] = useState<string>("");
 
-  const currentUser = getCurrentUser();
+  const isAdmin = useAdminGuard();
+  const { products, setProducts } = usePublicProducts();
 
-  // --- Detail ---
-  const [selectedProduct, setSelectedProduct] = useState<ProductImage | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [busyIds, setBusyIds] = useState<Set<number>>(new Set());
 
-  // --- State produk (search result) ---
-  const [filteredProducts, setFilteredProducts] = useState<ProductImage[]>([]);
+  // ===== akses (ditentukan oleh cookie di server) =====
+  const [hasAccess, setHasAccess] = useState<boolean>(false);
 
-  // Fetch initial product list
-  useEffect(() => {
-    const data = getAvailableProductImages(currentUser?.role) as ProductImage[];
-    setFilteredProducts(data);
-  }, [currentUser?.role]);
-
-  // Fetch all titles (optional, kalau mau dipakai buat filter by title)
-  useEffect(() => {
-    setAllTitles(getAllProductTitles());
-  }, [filteredProducts]);
-
-  // Search logic (biar search live)
-  const handleSearch = useCallback((query: string) => {
-    let products: ProductImage[] = [];
-    if (query.trim() === "") {
-      products = getAvailableProductImages(currentUser?.role) as ProductImage[];
-    } else {
-      products = searchProductImages(query);
+  // cek status akses dari server
+  const checkAccess = useCallback(async () => {
+    try {
+      const res = await fetch("/api/access/status", { credentials: "include", cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.ok) setHasAccess(!!data.hasAccess);
+      else setHasAccess(false);
+    } catch {
+      setHasAccess(false);
     }
-    setFilteredProducts(products);
-  }, [currentUser?.role]);
+  }, []);
 
-  // Kelompokkan produk by title (category) -- hasil search, bukan semua
-  const groupedProducts = groupByTitle(filteredProducts);
+  // helper fetch list (hanya includeHidden bila hasAccess)
+  const fetchProducts = useCallback(
+    async (forceIncludeHidden?: boolean) => {
+      const includeHidden = forceIncludeHidden ?? hasAccess;
+      const url = includeHidden ? "/api/user/products?includeHidden=1" : "/api/user/products";
+      try {
+        const res = await fetch(url, { method: "GET", credentials: "include", cache: "no-store" });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.ok && Array.isArray(data.items)) {
+          setProducts(data.items as ProductItem[]);
+        }
+      } catch {
+        // ignore
+      }
+    },
+    [hasAccess, setProducts]
+  );
 
-  // --- Render detail jika ada yang dipilih ---
+  // initial load: cek akses dulu, lalu fetch sesuai akses
+  useEffect(() => {
+    (async () => {
+      await checkAccess();
+      await fetchProducts(); // akan pakai nilai hasAccess terbaru (state sudah di-set di atas)
+    })();
+  }, [checkAccess, fetchProducts]);
+
+  // ketika AccessCodeBox sukses verifikasi → set hasAccess dan refetch dengan includeHidden
+  const handleAccessVerified = useCallback(async () => {
+    setHasAccess(true);
+    await fetchProducts(true); // paksa includeHidden
+  }, [fetchProducts]);
+
+  // ---- DELETE HANDLER (ADMIN ONLY) ----
+  const handleDelete = async (id: number) => {
+    if (!id) return alert("Produk tidak punya ID yang valid.");
+    if (!confirm("Yakin hapus produk ini?")) return;
+
+    try {
+      setBusyIds((prev) => new Set(prev).add(id));
+      const res = await fetch(`/api/admin/products?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data?.ok === false) {
+        throw new Error(data?.message || "Gagal menghapus produk");
+      }
+
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch (e: any) {
+      alert(e?.message || "Gagal menghapus produk");
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  // ---- HIDE HANDLER (ADMIN ONLY) ----
+  const handleHide = async (id: number) => {
+    if (!id) return alert("Produk tidak punya ID yang valid.");
+    if (!confirm("Sembunyikan produk ini?")) return;
+
+    try {
+      setBusyIds((prev) => new Set(prev).add(id));
+      const res = await fetch(`/api/admin/products/hide?id=${id}`, {
+        method: "PATCH",
+        credentials: "include",
+        cache: "no-store",
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data?.ok === false) {
+        throw new Error(data?.message || "Gagal menyembunyikan produk");
+      }
+
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, isHidden: true } : p)));
+    } catch (e: any) {
+      alert(e?.message || "Gagal menyembunyikan produk");
+    } finally {
+      setBusyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  // ---- SEARCH HANDLER ----
+  const handleSearch = useCallback(
+    (query: string) => {
+      const q = query ?? "";
+      setSearchQuery(q);
+      if (q.trim() === "") {
+        fetchProducts(); // refresh sesuai akses saat ini
+      }
+    },
+    [fetchProducts]
+  );
+
+  // daftar kategori dari produk (tanpa saring hidden di FE — server sudah gating)
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of products) {
+      const c = (p.category || "").trim();
+      if (c) set.add(c);
+    }
+    return ["All", ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+  }, [products]);
+
+  // filter gabungan (tanpa saring hidden di FE)
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return products.filter((p) => {
+      const matchCat =
+        !selectedCategory || selectedCategory === "All" || (p.category || "").trim() === selectedCategory;
+
+      const nameForSearch = (p as any).productName
+        ? String((p as any).productName).toLowerCase()
+        : String(p.title || "").toLowerCase();
+
+      const descForSearch = String(p.description || "").toLowerCase();
+      const titleForSearch = String(p.title || "").toLowerCase();
+
+      const matchSearch =
+        q === "" ||
+        nameForSearch.includes(q) ||
+        titleForSearch.includes(q) ||
+        descForSearch.includes(q);
+
+      return matchCat && matchSearch;
+    });
+  }, [products, searchQuery, selectedCategory]);
+
+  // === DETAIL VIEW ===
   if (selectedProduct) {
+    const imgs = buildImages(selectedProduct);
     return (
       <DetailProduct
         product={{
           id: selectedProduct.id,
-          name: selectedProduct.name,
-          price: selectedProduct.price,
-          imageUrl: selectedProduct.frontImage,
-          productDetail: selectedProduct.productDetail || "",
+          name: (selectedProduct as any).productName || selectedProduct.title,
+          price: getPriceStr(selectedProduct),
+          images: imgs,
+          productDetail: selectedProduct.description || "",
+          sizes: selectedProduct.sizes,
+          category: selectedProduct.category ?? null,
         }}
         onBack={() => setSelectedProduct(null)}
       />
     );
   }
 
+  // === LIST VIEW ===
   return (
     <div className="bg-black min-h-screen text-gray-300 font-mono">
-      {/* HEADER + SEARCH */}
       <Header onSearch={handleSearch} />
-
       <Marquee />
       <MobileMenuProduct isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
+
       <div className="container mx-auto px-4 sm:px-8 pt-0 pb-8">
         <div className="flex flex-row gap-12 items-start mt-8 pt-0">
           <aside className="w-1/6 pr-4 hidden md:flex flex-col items-center pt-0 mt-0 sticky top-28">
             <SidebarCategoryLogo />
           </aside>
+
           <main className="w-full md:w-5/6">
-            {/* ADMIN POST PRODUCT BUTTON */}
-            {currentUser?.role === "admin" && (
-              <div className="mb-10">
-                <button
-                  className="px-5 py-2 rounded bg-yellow-400 text-black font-bold hover:bg-yellow-300 active:scale-95 transition-all"
-                  onClick={() => {
-                    router.push("/admins/upload");
-                  }}
-                >
-                  Post Product
-                </button>
+            <AdminActionButtons
+              isAdmin={isAdmin}
+              onPostProduct={() => router.push("/admins/upload")}
+              onManageAccessCodes={() => router.push("/admins/access-codes")}
+            />
+
+            {/* Setelah verifikasi → set hasAccess dan refetch dengan includeHidden */}
+            <AccessCodeBox onVerified={handleAccessVerified} />
+
+            {/* Filter kategori */}
+            {categories.length > 1 && (
+              <div className="mb-6 -mt-2">
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {categories.map((cat) => {
+                    const active = (selectedCategory ?? "All") === cat;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat === "All" ? null : cat)}
+                        className={[
+                          "whitespace-nowrap px-3 py-1 rounded border text-sm transition-colors",
+                          active
+                            ? "bg-yellow-400 text-black border-yellow-400"
+                            : "bg-white/5 text-gray-200 border-yellow-400/30 hover:bg-white/10",
+                        ].join(" ")}
+                        title={cat}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+                {(selectedCategory || searchQuery) && (
+                  <div className="mt-2 text-xs text-gray-400">
+                    {selectedCategory && (
+                      <span className="mr-3">
+                        Kategori: <span className="text-yellow-300">{selectedCategory}</span>
+                      </span>
+                    )}
+                    {searchQuery && (
+                      <span>
+                        Cari: <span className="text-yellow-300">{searchQuery}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* DAFTAR PRODUK (GROUPED BY TITLE, FILTERED) */}
-            {Object.entries(groupedProducts).length === 0 ? (
-              <p className="text-gray-500 italic">Belum ada produk yang cocok</p>
-            ) : (
-              Object.entries(groupedProducts).map(([title, products]) => (
-                <div key={title} className="mb-10">
-                  {/* TITLE BISA DI-RENAME */}
-                  {editingTitle === title && currentUser?.role === "admin" ? (
-                    <input
-                      type="text"
-                      value={titleInput}
-                      autoFocus
-                      onChange={e => setTitleInput(e.target.value)}
-                      onBlur={() =>
-                        submitRenameTitleProduct({
-                          editingTitle,
-                          titleInput,
-                          setEditingTitle,
-                          setAdminImages: setFilteredProducts, // <-- Fix disini!
-                          currentUser
-                        })
-                      }
-                      onKeyDown={e => {
-                        if (e.key === "Enter" || e.key === "Escape") {
-                          submitRenameTitleProduct({
-                            editingTitle,
-                            titleInput,
-                            setEditingTitle,
-                            setAdminImages: setFilteredProducts, // <-- Fix juga disini!
-                            currentUser
-                          });
-                        }
-                      }}
-                      className="text-xl font-bold text-yellow-400 mb-4 mt-8 bg-neutral-900 px-2 py-1 rounded outline-none border border-yellow-300"
-                      style={{ minWidth: 100 }}
-                    />
-                  ) : (
-                    <h3
-                      className={`text-xl font-bold text-yellow-400 mb-4 mt-8 cursor-pointer hover:underline ${currentUser?.role === "admin" ? "" : "pointer-events-none"}`}
-                      tabIndex={currentUser?.role === "admin" ? 0 : -1}
-                      onClick={() =>
-                        handleTitleClickProduct(title, currentUser, setEditingTitle, setTitleInput)
-                      }
-                      onKeyDown={e => {
-                        if (e.key === "Enter")
-                          handleTitleClickProduct(title, currentUser, setEditingTitle, setTitleInput);
-                      }}
-                    >
-                      {title}
-                    </h3>
-                  )}
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12 sm:gap-x-8 sm:gap-y-16">
-                    {products.map((img: any) => (
-                      <AdminImageCardProduct
-                        key={img.id}
-                        {...img}
-                        isAdmin={currentUser?.role === "admin"}
-                        onDelete={
-                          currentUser?.role === "admin"
-                            ? () => handleDeleteProduct(img.id, currentUser, setFilteredProducts)
-                            : undefined
-                        }
-                        onClick={() => setSelectedProduct(img)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
+            {/* Grid */}
+            <ProductGrid
+              products={filtered}
+              onSelect={setSelectedProduct}
+              isAdmin={isAdmin}
+              onDelete={(id: number) => handleDelete(id)}
+              onHide={(id: number) => handleHide(id)}
+              deletingIds={busyIds}
+            />
           </main>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeIn { 0% { opacity: 0; transform: translateY(-6px);} 100% { opacity: 1; transform: none;} }
+        .animate-fadeIn { animation: fadeIn 0.15s linear; }
+      `}</style>
     </div>
   );
 };

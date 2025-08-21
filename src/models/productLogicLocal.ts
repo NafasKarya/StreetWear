@@ -1,4 +1,11 @@
-// model/productLogicLocal.ts
+// src/models/productLogicLocal.ts
+
+import type {
+  ChangeEvent,
+  Dispatch,
+  FormEvent,
+  SetStateAction,
+} from "react";
 
 import {
   ProductImage,
@@ -7,6 +14,12 @@ import {
   deleteProductImage,
   renameTitleAllProducts,
 } from "@/logic/productLogic";
+
+// Helper: validasi & normalize role ke union yang benar
+type Role = "admin" | "user";
+function asRole(role?: string): Role | undefined {
+  return role === "admin" || role === "user" ? role : undefined;
+}
 
 // Group products by title
 export function groupByTitle(products: ProductImage[]) {
@@ -21,19 +34,19 @@ export function groupByTitle(products: ProductImage[]) {
 
 // Format price: Rp
 export function formatHargaRp(val: string) {
-  let onlyNumber = val.replace(/[^\d]/g, "");
+  const onlyNumber = val.replace(/[^\d]/g, "");
   if (!onlyNumber) return "Rp 0";
   return "Rp " + parseInt(onlyNumber, 10).toLocaleString("id-ID");
 }
 
 // Handlers for form & CRUD
 export function handleFileChangeProduct(
-  e: React.ChangeEvent<HTMLInputElement>,
-  setUrl: any,
-  setFile: any
+  e: ChangeEvent<HTMLInputElement>,
+  setUrl: (v: string) => void,
+  setFile: (f: File | null) => void
 ) {
-  const fileObj = e.target.files?.[0];
-  setFile(fileObj || null);
+  const fileObj = e.target.files?.[0] ?? null;
+  setFile(fileObj);
   if (fileObj) {
     const reader = new FileReader();
     reader.onloadend = () => setUrl(reader.result as string);
@@ -42,25 +55,25 @@ export function handleFileChangeProduct(
 }
 
 export function handlePriceChangeProduct(
-  e: React.ChangeEvent<HTMLInputElement>,
-  setPrice: any
+  e: ChangeEvent<HTMLInputElement>,
+  setPrice: (raw: string) => void
 ) {
-  let raw = e.target.value.replace(/[^\d]/g, "");
+  const raw = e.target.value.replace(/[^\d]/g, "");
   setPrice(raw);
 }
 
-// === PENTING: PERBAIKI DI SINI, BIAR FIELD PRODUK NGGAK ADA YANG KOSONG ===
+// === Upload product ===
 export function handleUploadProduct({
   e,
   name,
   price,
-  url,           // frontImage BASE64 (hasil handleFileChangeProduct)
-  file,          // file objek
+  url,
+  file,
   title,
-  productDetail, // tambahkan dari form
-  discount,      // tambahkan dari form
-  voucher,       // tambahkan dari form
-  tax,           // tambahkan dari form
+  productDetail,
+  discount,
+  voucher,
+  tax,
   currentUser,
   setError,
   setTitle,
@@ -69,33 +82,50 @@ export function handleUploadProduct({
   setUrl,
   setFile,
   setAdminImages,
+}: {
+  e: FormEvent<HTMLFormElement>;
+  name: string;
+  price: string;
+  url?: string;
+  file?: File | null;
+  title?: string;
+  productDetail?: string;
+  discount?: string;
+  voucher?: string;
+  tax?: string;
+  currentUser: { email?: string; role?: string } | null | undefined;
+  setError: (msg: string | null) => void;
+  setTitle: (v: string) => void;
+  setName: (v: string) => void;
+  setPrice: (v: string) => void;
+  setUrl: (v: string) => void;
+  setFile: (f: File | null) => void;
+  setAdminImages: Dispatch<SetStateAction<ProductImage[]>>;
 }) {
   e.preventDefault();
   setError(null);
 
-  // Validasi minimal
   if (!name.trim() || !price.trim() || (!url && !file)) {
     setError("Nama, harga, dan gambar wajib");
     return;
   }
-  if (!currentUser || currentUser.role !== "admin") {
+  if (!currentUser || asRole(currentUser.role) !== "admin") {
     setError("Hanya admin yang boleh upload");
     return;
   }
 
-  // Pastikan semua field KEISI
   uploadProductImage(
     {
       title: title || undefined,
       name,
       price,
-      frontImage: url,
+      frontImage: url ?? "",
       productDetail: productDetail || "-",
       discount: discount || "0",
       voucher: voucher || "0",
       tax: tax || "0",
     },
-    currentUser.email
+    currentUser.email || ""
   );
 
   setTitle("");
@@ -103,22 +133,35 @@ export function handleUploadProduct({
   setPrice("");
   setUrl("");
   setFile(null);
-  setAdminImages(getAvailableProductImages(currentUser?.role) as ProductImage[]);
+  setAdminImages(
+    getAvailableProductImages(asRole(currentUser.role)) as ProductImage[]
+  );
 }
 
-export function handleDeleteProduct(id, currentUser, setAdminImages) {
-  if (!currentUser || currentUser.role !== "admin") return;
-  deleteProductImage(id, currentUser.email);
-  setAdminImages(getAvailableProductImages(currentUser?.role) as ProductImage[]);
+export function handleDeleteProduct(
+  id: string | number,
+  currentUser: { email?: string; role?: string } | null | undefined,
+  setAdminImages: Dispatch<SetStateAction<ProductImage[]>>
+) {
+  if (!currentUser || asRole(currentUser.role) !== "admin") return;
+
+  const numericId = typeof id === "string" ? Number(id) : id;
+  if (!Number.isFinite(numericId)) return;
+
+  deleteProductImage(numericId, currentUser.email || "");
+
+  setAdminImages(
+    getAvailableProductImages(asRole(currentUser.role)) as ProductImage[]
+  );
 }
 
 export function handleTitleClickProduct(
-  oldTitle,
-  currentUser,
-  setEditingTitle,
-  setTitleInput
+  oldTitle: string,
+  currentUser: { role?: string } | null | undefined,
+  setEditingTitle: Dispatch<SetStateAction<string | null>>,
+  setTitleInput: (v: string) => void
 ) {
-  if (currentUser?.role !== "admin") return;
+  if (asRole(currentUser?.role) !== "admin") return;
   setEditingTitle(oldTitle);
   setTitleInput(oldTitle === "Tanpa Judul" ? "" : oldTitle);
 }
@@ -129,6 +172,12 @@ export function submitRenameTitleProduct({
   setEditingTitle,
   setAdminImages,
   currentUser,
+}: {
+  editingTitle: string | null;
+  titleInput: string;
+  setEditingTitle: Dispatch<SetStateAction<string | null>>;
+  setAdminImages: Dispatch<SetStateAction<ProductImage[]>>;
+  currentUser: { role?: string } | null | undefined;
 }) {
   if (editingTitle == null) return;
   const newTitle =
@@ -139,5 +188,7 @@ export function submitRenameTitleProduct({
   }
   renameTitleAllProducts(editingTitle, newTitle);
   setEditingTitle(null);
-  setAdminImages(getAvailableProductImages(currentUser?.role) as ProductImage[]);
+  setAdminImages(
+    getAvailableProductImages(asRole(currentUser?.role)) as ProductImage[]
+  );
 }

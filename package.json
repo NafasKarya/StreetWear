@@ -2,29 +2,47 @@
   "name": "streetwear",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
   },
   "dependencies": {
     "@google/model-viewer": "^4.1.0",
+    "@prisma/client": "^6.14.0",
+    "bcryptjs": "^3.0.2",
     "framer-motion": "^12.23.12",
+    "jose": "^6.0.12",
+    "jsonwebtoken": "^9.0.2",
+    "mime-types": "^3.0.1",
     "next": "15.4.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icon": "^1.0.0",
-    "react-icons": "^5.5.0"
+    "react-icons": "^5.5.0",
+    "reflect-metadata": "^0.2.2",
+    "tsyringe": "^4.10.0",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mime-types": "^3.0.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.4.3",
+    "prisma": "^6.14.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

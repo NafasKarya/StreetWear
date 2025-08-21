@@ -1,0 +1,263 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+enum Role {
+  user
+  admin
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(user)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // ===== ADMIN TOKENS (tetap) =====
+  token        AdminAccessToken?
+  refreshToken AdminRefreshToken?
+
+  // ===== USER TOKENS (BARU) =====
+  userToken        UserAccessToken?
+  userRefreshToken UserRefreshToken?
+
+  // Relasi balik ke Cart (One-to-One)
+  cart Cart?
+
+  // ⬇⬇⬇ Tambahan ini yang wajib
+  accessGrants UserAccessGrant[]   // back-relation ke UserAccessGrant.user
+}
+
+
+model AdminAccessToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+model AdminRefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  tokenHash String
+  expiresAt DateTime
+  rotatedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+model UserAccessToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+model UserRefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  tokenHash String
+  expiresAt DateTime
+  rotatedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AccessCode {
+  id        Int       @id @default(autoincrement())
+  label     String?   @db.VarChar(191)
+  scope     String    @db.VarChar(191)
+  tokenHash String    @unique @db.Char(64)
+  maxUses   Int?
+  usedCount Int       @default(0)
+  expiresAt DateTime?
+  enabled   Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+}
+
+model Product {
+  id            Int       @id @default(autoincrement())
+  frontImageUrl String
+  backImageUrl  String?
+  galleryJson   Json?
+  title         String    @db.VarChar(191)
+  description   String
+  category      String    @db.VarChar(191)
+  productName   String?   @db.VarChar(191) // ⬅️ NEW (opsional)
+  sizesJson     Json
+  createdBy     String?
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  // relasi balik buat CheckoutItem
+  checkoutItems CheckoutItem[]
+
+  // ⬇️⬇️ NEW: gating untuk hidden product
+  isHidden    Boolean  @default(false)
+  hiddenScope String?  @db.VarChar(191)
+
+  @@index([title])
+  @@index([category])
+  @@index([deletedAt])
+  @@index([isHidden])
+  @@index([hiddenScope])
+}
+
+model Checkout {
+  id        Int            @id @default(autoincrement())
+  orderRef  String?        @unique
+  note      String?
+  createdBy String?
+  createdAt DateTime       @default(now())
+  items     CheckoutItem[]
+
+  @@map("checkout")
+}
+
+model CheckoutItem {
+  id         Int     @id @default(autoincrement())
+  checkoutId Int
+  productId  Int
+  sizeLabel  String  @db.VarChar(64)
+  qty        Int
+  price      Float?
+  currency   String? @db.VarChar(8)
+  snapshot   Json?
+
+  product  Product  @relation(fields: [productId], references: [id])
+  checkout Checkout @relation(fields: [checkoutId], references: [id])
+
+  @@index([productId])
+  @@index([checkoutId])
+  @@map("checkout_item")
+}
+
+// prisma/schema.prisma (tambahkan di bawah model Product)
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique @db.VarChar(191)
+  slug      String    @unique @db.VarChar(191)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("category")
+}
+
+// prisma/schema.prisma
+
+model ChartEvent {
+  id        Int            @id @default(autoincrement())
+  type      ChartEventType
+  productId Int?
+  sizeLabel String?
+  qty       Int?
+  amount    Decimal?
+  currency  String?
+  sessionId String?
+  metadata  Json?
+  createdAt DateTime       @default(now())
+}
+
+enum ChartEventType {
+  PAGE_VIEW
+  PRODUCT_VIEW
+  PRODUCT_IMAGE_VIEW
+  ADD_TO_CART
+  REMOVE_FROM_CART
+  SIZE_SELECTED
+  CHECKOUT_CLICKED
+  CHECKOUT_CREATED
+  CHECKOUT_ITEM
+}
+
+model MetricDaily {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  metric    String
+  value     Decimal  @default(0)
+  dim       String   @default("")
+  extra     Json?
+  updatedAt DateTime @updatedAt
+
+  @@unique([date, metric, dim])
+  @@index([date, metric])
+}
+
+// prisma/schema.prisma
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int        @unique
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  sizeLabel String
+  qty       Int
+  price     Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart Cart @relation(fields: [cartId], references: [id])
+
+  @@unique([cartId, productId, sizeLabel], name: "cartId_productId_sizeLabel")
+}
+
+model UserAccessGrant {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  scope     String   @db.VarChar(191)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, scope])
+}
+
