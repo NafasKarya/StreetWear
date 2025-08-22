@@ -6,6 +6,12 @@ import Header from "../header/Header";
 
 // ===== IMPORT HELPER FIXED =====
 import { toPublicUrl } from "@/lib/upload/paths"; // FIXED
+import { ShippingPolicyModal } from "./components/ShippingPolicyModal";
+import { NewsletterModal } from "./components/NewsletterModal";
+import { TermsModal } from "./components/TermsModal";
+
+// ===== MODALS (pisah file) =====
+
 
 const ChevronLeft = (props: any) => (
   <svg width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" {...props}>
@@ -97,6 +103,11 @@ async function logMetricsEvent(payload: {
 export default function DetailProduct({ product, onBack, categories }: DetailProductProps) {
   const { addToCart } = useCart();
   const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // ====== MODAL STATES ======
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const [newsletterOpen, setNewsletterOpen] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const navCategories = useMemo(
     () => Array.from(new Set(Array.isArray(categories) ? categories.filter(Boolean) : [])),
@@ -271,15 +282,15 @@ export default function DetailProduct({ product, onBack, categories }: DetailPro
               </nav>
             )}
             <div className="flex flex-col gap-2 text-sm">
-              <a href="#" className="hover:underline">
+              <button type="button" onClick={() => setNewsletterOpen(true)} className="text-left hover:underline">
                 NEWSLETTER
-              </a>
-              <a href="#" className="hover:underline">
+              </button>
+              <button type="button" onClick={() => setPolicyOpen(true)} className="text-left hover:underline">
                 SHIPPING POLICY
-              </a>
-              <a href="#" className="hover:underline">
+              </button>
+              <button type="button" onClick={() => setTermsOpen(true)} className="text-left hover:underline">
                 TERMS OF SERVICE
-              </a>
+              </button>
             </div>
           </aside>
 
@@ -431,6 +442,11 @@ export default function DetailProduct({ product, onBack, categories }: DetailPro
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
+
+      {/* ===== MODALS MOUNT ===== */}
+      <ShippingPolicyModal open={policyOpen} onClose={() => setPolicyOpen(false)} />
+      <NewsletterModal open={newsletterOpen} onClose={() => setNewsletterOpen(false)} />
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
     </div>
   );
 }

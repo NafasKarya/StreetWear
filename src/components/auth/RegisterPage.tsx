@@ -17,57 +17,56 @@ const RegisterPage: React.FC<Props> = ({ onRegister, onSwitchToLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
-  try {
-    if (!username || username.length < 3) {
-      setError("Username minimal 3 karakter.");
-      return;
-    }
-    if (!email.includes("@")) {
-      setError("Email tidak valid.");
-      return;
-    }
-    if (password.length < 4) {
-      setError("Password minimal 4 karakter.");
-      return;
-    }
-    if (password !== repeatPassword) {
-      setError("Password tidak sama.");
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (!username || username.length < 3) {
+        setError("Username minimal 3 karakter.");
+        return;
+      }
+      if (!email.includes("@")) {
+        setError("Email tidak valid.");
+        return;
+      }
+      if (password.length < 4) {
+        setError("Password minimal 4 karakter.");
+        return;
+      }
+      if (password !== repeatPassword) {
+        setError("Password tidak sama.");
+        return;
+      }
 
-    await new Promise((r) => setTimeout(r, 300)); // optional delay kecil biar UX ada feedback
+      await new Promise((r) => setTimeout(r, 300));
 
-    // ⬇️ ini kuncinya: AWAIT!
-    const res = await register(username, email, password);
+      const res = await register(username, email, password);
 
-    if (!res.ok) {
-      setError(res.msg || "Register gagal");
-      return;
+      if (!res.ok) {
+        setError(res.msg || "Register gagal");
+        return;
+      }
+
+      onRegister();
+    } catch {
+      setError("Register gagal, coba lagi.");
+    } finally {
+      setLoading(false);
     }
-
-    onRegister(); // auto-login lokal sudah dilakukan di register(); tinggal lanjutkan flow
-  } catch {
-    setError("Register gagal, coba lagi.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div
       className="relative min-h-screen bg-center bg-cover"
-      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1569470451072-68314f596aec?q=80&w=1331&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }}
+      style={{ backgroundImage: "url('https://images.unsplash.com/photo-1569470451072-68314f596aec?q=80&w=1331&auto=format&fit=crop')" }}
     >
       <div className="absolute inset-0 bg-black bg-opacity-60" />
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
         <div className="w-full max-w-md text-center">
           <h1 className="text-5xl font-extrabold text-white uppercase">REGISTER</h1>
-          <p className="mt-2 text-lg text-gray-300">Let's get you started!</p>
+          <p className="mt-2 text-lg text-black">Let's get you started!</p>
 
           <form
             className="mt-8 space-y-4"
@@ -86,7 +85,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 disabled={loading}
                 autoComplete="username"
                 required
-                className="w-full px-4 py-3 rounded bg-white placeholder-gray-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded bg-white placeholder-black text-black focus:outline-none"
               />
             </div>
 
@@ -100,7 +99,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 disabled={loading}
                 autoComplete="email"
                 required
-                className="w-full px-4 py-3 rounded bg-white placeholder-gray-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded bg-white placeholder-black text-black focus:outline-none"
               />
             </div>
 
@@ -114,11 +113,11 @@ const handleSubmit = async (e: React.FormEvent) => {
                 disabled={loading}
                 autoComplete="new-password"
                 required
-                className="w-full px-4 py-3 rounded bg-white placeholder-gray-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded bg-white placeholder-black text-black focus:outline-none"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black"
                 onClick={() => setShowPass(v => !v)}
                 tabIndex={-1}
                 disabled={loading}
@@ -137,11 +136,11 @@ const handleSubmit = async (e: React.FormEvent) => {
                 disabled={loading}
                 autoComplete="new-password"
                 required
-                className="w-full px-4 py-3 rounded bg-white placeholder-gray-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded bg-white placeholder-black text-black focus:outline-none"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-black"
                 onClick={() => setShowRepeat(v => !v)}
                 tabIndex={-1}
                 disabled={loading}
@@ -159,7 +158,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             </button>
           </form>
 
-          <p className="mt-6 text-sm text-gray-200">
+          <p className="mt-6 text-sm text-black">
             Sudah punya akun?{" "}
             <button
               type="button"
