@@ -12,7 +12,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
   const [credential, setCredential] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [asAdmin, setAsAdmin] = useState(false); // <- toggle paksa admin
+  const [asAdmin, setAsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,19 +32,14 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
         return;
       }
 
-      await new Promise((r) => setTimeout(r, 200)); // biar ada feedback dikit
+      await new Promise((r) => setTimeout(r, 200));
 
-      // NEW: kalau asAdmin=true → paksa jalur admin, kalau false → coba user dulu, lalu admin.
       const res = await login(credential, password, asAdmin);
       if (!res.ok) {
         setError(res.msg || 'Login gagal');
         return;
       }
 
-      // Kalau kamu mau handle redirect di sini:
-      // router.replace(nextUrl); router.refresh();
-
-      // Atau biar konsisten sama parent (AuthScreen) kamu:
       onLogin();
     } catch {
       setError('Login gagal, coba lagi.');
@@ -62,7 +57,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
         <div className="w-full max-w-md text-center">
           <h1 className="text-5xl font-extrabold text-white uppercase">LOG IN</h1>
-          <p className="mt-2 text-lg text-gray-300">Welcome back, bestie!</p>
+          <p className="mt-2 text-lg text-black">Welcome back, bestie!</p>
 
           <form className="mt-8 space-y-4" onSubmit={handleSubmit} autoComplete="off">
             {error && <p className="text-red-500">{error}</p>}
@@ -77,7 +72,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
                 disabled={loading}
                 autoComplete="username"
                 required
-                className="w-full px-4 py-3 rounded bg-white placeholder-gray-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded bg-white placeholder-black text-black focus:outline-none"
               />
             </div>
 
@@ -91,11 +86,11 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
                 disabled={loading}
                 autoComplete="current-password"
                 required
-                className="w-full px-4 py-3 rounded bg-white placeholder-gray-500 focus:outline-none"
+                className="w-full px-4 py-3 rounded bg-white placeholder-black text-black focus:outline-none"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-black"
                 onClick={() => setShowPass((v) => !v)}
                 tabIndex={-1}
                 disabled={loading}
@@ -105,8 +100,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
               </button>
             </div>
 
-            {/* Toggle paksa admin (opsional) */}
-            <label className="flex items-center gap-2 text-left text-gray-200 text-sm">
+            <label className="flex items-center gap-2 text-left text-black text-sm">
               <input
                 type="checkbox"
                 checked={asAdmin}
@@ -119,7 +113,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
             <div className="text-right">
               <button
                 type="button"
-                className="text-sm text-gray-200 underline"
+                className="text-sm text-black underline"
                 onClick={() => { /* TODO: forgot password */ }}
                 disabled={loading}
               >
@@ -136,7 +130,7 @@ const LoginPage: React.FC<Props> = ({ onLogin, onSwitchToRegister }) => {
             </button>
           </form>
 
-          <p className="mt-6 text-sm text-gray-200">
+          <p className="mt-6 text-sm text-black">
             Don't have an account yet?{' '}
             <button
               type="button"
