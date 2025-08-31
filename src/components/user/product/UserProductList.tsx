@@ -2,21 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useUserProduct } from "@/store/user/product/useUserProduct";
-
-type Product = {
-  id: number | string;
-  uuid: string;
-  title: string;
-  name: string;
-  price: number;
-  stock: number;
-  front_image: string;
-  back_image?: string;
-  category_uuid: string;
-  category_name: string;
-  category_slug: string;
-  expired_at?: string;
-};
+import { UserProduct } from "@/store/type/types"; // <<< PENTING! Harus import tipe UserProduct
 
 const DEFAULT_IMAGE = "/assets/no-image.png";
 
@@ -25,7 +11,6 @@ function getSafeImageUrl(img?: string) {
   return img;
 }
 
-// Card Produk dengan loader overlay
 export const UserProductItem = React.memo(
   ({
     product,
@@ -34,7 +19,7 @@ export const UserProductItem = React.memo(
     isLoading,
     disabled,
   }: {
-    product: Product;
+    product: UserProduct;  // <<< GANTI Product ke UserProduct
     index: number;
     onClick?: () => void;
     isLoading?: boolean;
@@ -67,7 +52,6 @@ export const UserProductItem = React.memo(
               className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             />
           )}
-          {/* Loader Kecil Overlay */}
           {isLoading && (
             <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-10">
               <svg className="animate-spin h-8 w-8 text-yellow-400" fill="none" viewBox="0 0 24 24">
@@ -78,20 +62,21 @@ export const UserProductItem = React.memo(
           )}
         </div>
         <div className="px-1 flex items-center justify-between gap-2">
-          <div>
-            <p className="text-xs sm:text-sm text-zinc-400">{product.name}</p>
-            <p className="text-xs text-zinc-500 uppercase">{product.category_name}</p>
-            {product.price !== undefined && (
-              <p className="text-sm font-semibold text-emerald-400">
-                Rp {product.price.toLocaleString("id-ID")}
-              </p>
-            )}
-            {product.expired_at && (
-              <p className="mt-1 text-[10px] sm:text-xs text-zinc-500 uppercase">
-                Exp: {product.expired_at}
-              </p>
-            )}
-          </div>
+<div>
+  <p className="text-xs sm:text-sm text-zinc-400">{product.name}</p>
+  <p className="text-xs text-zinc-500 uppercase">{product.category_name}</p>
+  {typeof product.price === "number" && (
+    <p className="text-sm font-semibold text-emerald-400">
+      Rp {product.price.toLocaleString("id-ID")}
+    </p>
+  )}
+  {typeof product.expired_at === "string" && product.expired_at && (
+    <p className="mt-1 text-[10px] sm:text-xs text-zinc-500 uppercase">
+      Exp: {product.expired_at}
+    </p>
+  )}
+</div>
+
         </div>
       </div>
     );
@@ -99,6 +84,7 @@ export const UserProductItem = React.memo(
 );
 UserProductItem.displayName = "UserProductItem";
 
+// LIST
 export default function UserProductList({
   onProductClick,
 }: {
@@ -109,11 +95,13 @@ export default function UserProductList({
 
   useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Group by title
   const groupedProducts = useMemo(() => {
     return Object.entries(
-      products.reduce((acc: Record<string, Product[]>, p: Product) => {
+      products.reduce((acc: Record<string, UserProduct[]>, p: UserProduct) => {
         (acc[p.title] ||= []).push(p);
         return acc;
       }, {})

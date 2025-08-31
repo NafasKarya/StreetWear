@@ -43,13 +43,13 @@ export default function AdminEditProfilePage() {
       alert("Token not found. Please log in again.");
       return;
     }
-    await editProfile(
-      {
-        email: email || undefined,
-        password: password || undefined,
-      },
-      token
-    );
+
+    // Bikin payload cuma kirim field yang user isi (biar type aman)
+    const payload: { email?: string; password?: string } = {};
+    if (email) payload.email = email;
+    if (password) payload.password = password;
+
+    await editProfile(payload as any, token); // Kalau typenya belum update, bisa pake 'as any' (tapi kalau sudah update di store, ga perlu)
   };
 
   return (

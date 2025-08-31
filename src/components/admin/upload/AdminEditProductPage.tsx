@@ -1,12 +1,18 @@
+// src/components/admin/upload/AdminEditProductPage.tsx
 import React, { useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useAdminProductStore } from "@/store/product/useAdminProductStore";
-import AdminProductUploadForm from "./AdminProductUploadForm";
-import { useEditProductStore } from "@/store/product/useAdminEditProductStore";
+import { useRouter } from "next/navigation";
 
-export default function AdminEditProductPage() {
+import AdminProductUploadForm from "./AdminProductUploadForm";
+import { useEditProductStore } from "@/store/admin/product/useAdminEditProductStore";
+import { useAdminProductStore } from "@/store/admin/product/useAdminProductStore";
+
+// Tambahkan tipe props dan deklarasi uuid
+type AdminEditProductPageProps = {
+  uuid: string;
+};
+
+export default function AdminEditProductPage({ uuid }: AdminEditProductPageProps) {
   const router = useRouter();
-  const { uuid } = useParams<{ uuid: string }>();
 
   const {
     getProductDetail,
@@ -22,7 +28,8 @@ export default function AdminEditProductPage() {
     if (uuid) {
       getProductDetail(uuid);
     }
-  }, [uuid, getProductDetail]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uuid]);
 
   // Handler untuk submit form
   const handleSubmit = async (payload: any) => {
@@ -35,14 +42,13 @@ export default function AdminEditProductPage() {
     }
   };
 
-  // Pastikan onSubmit diteruskan ke AdminProductUploadForm
   return (
     <AdminProductUploadForm
       mode="edit"
       initialData={productDetail || undefined}
       loading={loading}
       error={error || null}
-      onSubmit={handleSubmit}  // Pastikan handleSubmit diteruskan dengan benar
+      onSubmit={handleSubmit}
       uuid={uuid}
     />
   );

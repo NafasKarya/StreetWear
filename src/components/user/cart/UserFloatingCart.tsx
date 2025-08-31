@@ -112,7 +112,7 @@ export default function UserFloatingCart() {
                                 <div className="flex flex-1 flex-col items-center justify-center gap-4 min-h-[340px]">
                                     <div className="w-full flex justify-center">
                                         <img
-                                            src="https://nafaskarya-bucket.oss-ap-southeast-5.aliyuncs.com/images/20250831_2030_Futuristic%20Streetwear%20Elegance_simple_compose_01k4053kqhfv1vbkrthdeqdng4.png"
+                                            src="https://nafaskarya-bucket.oss-ap-southeast-5.aliyuncs.com/images/bagian wave nya jang.png"
                                             alt="Futuristic Streetwear Elegance"
                                             className="max-h-60 object-contain rounded-lg opacity-90 mx-auto"
                                         />

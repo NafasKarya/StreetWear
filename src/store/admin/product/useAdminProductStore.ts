@@ -7,7 +7,7 @@ import {
   ADMIN_DELETE_PRODUCTS_URL,
   ADMIN_SHOW_PRODUCT_URL,
 } from "@/config/api-endpoints";
-import { Product, StoreProductPayload } from "../type/types";
+import { Product, StoreProductPayload } from "@/store/type/types";
 
 interface ErrorResponse {
   message: string;
@@ -25,7 +25,8 @@ interface AdminProductStoreState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   storeProduct: (data: StoreProductPayload) => Promise<void>;
-  getAdminProducts: (search?: string) => Promise<void>;
+  // ⬇️ INI YANG DIUBAH!
+  getAdminProducts: (search?: string, selectedCategory?: string) => Promise<void>;
   getProductDetail: (uuid: string) => Promise<void>;
   deleteProduct: (uuid: string) => Promise<void>;
   getCategoriesFromProducts: () => void;
@@ -152,49 +153,48 @@ export const useAdminProductStore = create<AdminProductStoreState>((set, get) =>
     }
   },
 
-getAdminProducts: async (search, selectedCategory) => {
-  set({ loading: true, error: null });
-  try {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  // ⬇️ PERHATIKAN: Sekarang support 2 argumen!
+  getAdminProducts: async (search = "", selectedCategory = "") => {
+    set({ loading: true, error: null });
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    // Gabungkan pencarian dengan kategori
-    let url = `${ADMIN_GET_PRODUCTS_URL}`;
-    if (search.trim() !== "" || selectedCategory !== "") {
-      url = `${ADMIN_GET_SEARCH_URL}?search=${encodeURIComponent(search)}&category=${encodeURIComponent(selectedCategory)}`;
-    }
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        Accept: "application/json",
-      },
-    });
-
-    const resJson = await response.json().catch(() => null);
-
-    if (response.status === 401) {
-      localStorage.removeItem("token");
-      set({ token: null });
-      if (typeof window !== "undefined") {
-        window.location.href = "/admins/auth/login";
+      // Gabungkan pencarian dengan kategori
+      let url = `${ADMIN_GET_PRODUCTS_URL}`;
+      if (search.trim() !== "" || selectedCategory !== "") {
+        url = `${ADMIN_GET_SEARCH_URL}?search=${encodeURIComponent(search)}&category=${encodeURIComponent(selectedCategory)}`;
       }
-      return;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Accept: "application/json",
+        },
+      });
+
+      const resJson = await response.json().catch(() => null);
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        set({ token: null });
+        if (typeof window !== "undefined") {
+          window.location.href = "/admins/auth/login";
+        }
+        return;
+      }
+
+      if (!response.ok) {
+        const message = isErrorResponse(resJson) ? resJson.message : "Gagal mengambil data produk";
+        throw new Error(message);
+      }
+
+      set({ loading: false, products: resJson.products || [] });
+      get().getCategoriesFromProducts(); // Ambil kategori dari produk yang didapat
+    } catch (err) {
+      set({ loading: false, error: extractError(err) });
     }
-
-    if (!response.ok) {
-      const message = isErrorResponse(resJson) ? resJson.message : "Gagal mengambil data produk";
-      throw new Error(message);
-    }
-
-    set({ loading: false, products: resJson.products || [] });
-    get().getCategoriesFromProducts(); // Ambil kategori dari produk yang didapat
-  } catch (err) {
-    set({ loading: false, error: extractError(err) });
-  }
-},
-
-
+  },
 
   getCategoriesFromProducts: () => {
     const products = get().products;

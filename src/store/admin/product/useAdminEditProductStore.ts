@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { ADMIN_EDIT_PRODUCT_URL } from "@/config/api-endpoints";
-import { StoreProductPayload } from "../type/types";
+import { StoreProductPayload } from "@/store/type/types";
+
 
 interface ErrorResponse {
   message: string;

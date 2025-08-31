@@ -5,7 +5,8 @@ export const ADMIN_EDIT_PROFILE_URL = "http://127.0.0.1:8000/api/admin/profile";
 type EditProfilePayload = {
   name: string;
   email: string;
-  // Tambahkan field lain jika diperlukan
+  password?: string; // <- Tambahin password opsional!
+  // Bisa tambahin field lain kalo backend support
 };
 
 type EditProfileResponse = {

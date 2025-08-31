@@ -55,3 +55,19 @@ export interface ProductFormData {
   category_uuid?: string;  // Tambahkan category_uuid, opsional untuk backend
   category_slug?: string;  // Tambahkan category_slug, opsional untuk backend
 }
+
+export interface UserProduct {
+  id: number;
+  uuid: string;
+  title: string;
+  name: string;
+  price: number;
+  stock: number;
+  front_image: string;
+  back_image: string;         // fallback "" via normalizer
+  category_uuid: string;
+  category_name: string;
+  category_slug: string;
+  expired_at?: string;        // optional
+  [key: string]: unknown;
+}

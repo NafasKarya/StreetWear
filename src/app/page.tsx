@@ -1,24 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import SplashScreen from "@/components/SplashScreen";
-import FourteenProduct from "@/components/productCatalog/ProductCatalog";
-import { CartProvider } from "@/components/cart/CartContext";
-import Checkout from "@/components/checkout/Checkout";
-import Header from "@/components/header/Header";
-import { getCurrentUser } from "@/logic/authLocal";
-import AppLoginRegisterProfile from "@/components/profile/AppLoginRegisterProfile";
-import AdminDashboard from "@/components/admin/AdminDashboard";
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [user, setUser] = useState<any>(undefined);
 
-  useEffect(() => {
-    setUser(getCurrentUser());
-  }, []);
-
-  // --- CEK & HAPUS SPLASH EXPIRED (5 MENIT) ---
   useEffect(() => {
     if (typeof window === "undefined") return;
     const item = localStorage.getItem("hasSeenSplash");
@@ -49,33 +35,7 @@ export default function Home() {
     setShowSplash(false);
   };
 
+  // Selalu render SplashScreen (atau null kalau udah lanjut)
   if (showSplash) return <SplashScreen onContinue={handleSplashContinue} />;
-
-  if (typeof window !== "undefined" && user === undefined) return null;
-
-  if (!user) {
-    return (
-      <AppLoginRegisterProfile
-        onSessionChange={() => setUser(getCurrentUser())}
-      />
-    );
-  }
-
-  if (
-    user?.email === "admin@fourteen.com" &&
-    user?.password === "admin123"
-  ) {
-    return <AdminDashboard />;
-  }
-
-  return (
-    <CartProvider>
-      {/* <Header onCheckout={() => setShowCheckout(true)} /> */}
-      {showCheckout ? (
-        <Checkout onBack={() => setShowCheckout(false)} />
-      ) : (
-        <FourteenProduct />
-      )}
-    </CartProvider>
-  );
+  return null;
 }

@@ -4,8 +4,9 @@ import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Pencil, Trash2 } from "lucide-react";
-import { useAdminProductStore } from "@/store/product/useAdminProductStore";
+
 import { Product } from "@/store/type/types";
+import { useAdminProductStore } from "@/store/admin/product/useAdminProductStore";
 
 interface ProductItemProps {
   product: Product;

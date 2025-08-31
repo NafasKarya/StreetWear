@@ -1,24 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { UserProduct } from '@/store/type/types'; // <--- INI WAJIB, BUKAN declare ulang!
 
 export const USER_GET_PRODUCTS_URL = 'http://127.0.0.1:8000/api/user/products';
-
-// Typing produk, sesuaiin sama response terbaru dari API lo!
-export interface UserProduct {
-  id: number;
-  uuid: string;
-  title: string;
-  name: string;
-  price: number;
-  stock: number;
-  front_image: string;
-  back_image?: string;
-  category_uuid: string;
-  category_name: string;
-  category_slug: string;
-  // Kalau ada tambahan field di masa depan, biarin aja open index signature:
-  [key: string]: unknown;
-}
 
 interface UserProductState {
   isLoading: boolean;
@@ -27,10 +11,26 @@ interface UserProductState {
   fetchProducts: () => Promise<void>;
 }
 
-// Helper untuk extract error asli dari backend
+function normalizeUserProduct(raw: any): UserProduct {
+  return {
+    id: Number(raw.id) ?? 0,
+    uuid: raw.uuid ?? "",
+    title: raw.title ?? "",
+    name: raw.name ?? "",
+    price: Number(raw.price) ?? 0,
+    stock: Number(raw.stock) ?? 0,
+    front_image: raw.front_image ?? "",
+    back_image: raw.back_image ?? "",
+    category_uuid: raw.category_uuid ?? "",
+    category_name: raw.category_name ?? "",
+    category_slug: raw.category_slug ?? "",
+    expired_at: typeof raw.expired_at === "string" ? raw.expired_at : undefined,
+  };
+}
+
 const extractErrorMessage = (err: unknown): string => {
   if (axios.isAxiosError(err)) {
-    if (err.response?.status === 401) return "unauthorized"; // <- tambahin ini buat detect token expired/session habis
+    if (err.response?.status === 401) return "unauthorized";
     const data = err.response?.data;
     if (typeof data === 'string') return data;
     if (typeof data?.message === 'string') return data.message;
@@ -49,15 +49,17 @@ export const useUserProduct = create<UserProductState>((set) => ({
   fetchProducts: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Ambil token user dari localStorage
       const token = localStorage.getItem('user_token');
       const res = await axios.get(USER_GET_PRODUCTS_URL, {
-        headers: token
-          ? { Authorization: `Bearer ${token}` }
-          : undefined,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
-      // Map ke tipe UserProduct, fallback ke array kosong kalo data nggak ada
-      set({ products: Array.isArray(res.data?.data) ? res.data.data : [], isLoading: false, error: null });
+      set({
+        products: Array.isArray(res.data?.data)
+          ? res.data.data.map(normalizeUserProduct)
+          : [],
+        isLoading: false,
+        error: null,
+      });
     } catch (err) {
       set({ isLoading: false, error: extractErrorMessage(err), products: [] });
     }
