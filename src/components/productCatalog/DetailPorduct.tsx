@@ -230,7 +230,7 @@ export default function DetailProduct({ product, onBack, categories }: DetailPro
       flyingImg.style.zIndex = "9999";
       flyingImg.style.pointerEvents = "none";
       document.body.appendChild(flyingImg);
-      // @ts-ignore
+
       flyingImg.offsetWidth;
       flyingImg.style.left = cartRect.left + cartRect.width / 2 - imgRect.width / 4 + "px";
       flyingImg.style.top = cartRect.top + cartRect.height / 2 - imgRect.height / 4 + "px";
@@ -286,10 +286,10 @@ export default function DetailProduct({ product, onBack, categories }: DetailPro
                 NEWSLETTER
               </button>
               <button type="button" onClick={() => setPolicyOpen(true)} className="text-left hover:underline">
-                SHIPPING POLICY
+                HOW WE SHIP
               </button>
               <button type="button" onClick={() => setTermsOpen(true)} className="text-left hover:underline">
-                TERMS OF SERVICE
+                HOUSE RULES
               </button>
             </div>
           </aside>
@@ -433,7 +433,7 @@ export default function DetailProduct({ product, onBack, categories }: DetailPro
         </div>
 
         <footer className="text-center text-xs text-yellow-400/70 pt-8 mt-8 border-t border-yellow-400/50">
-          <p>Copyright © 2023, CRTZW</p>
+          <p>Copyright © 2025, Fourteendency</p>
         </footer>
       </div>
 

@@ -7,29 +7,52 @@ import Checkout from "@/components/checkout/Checkout";
 import Header from "@/components/header/Header";
 import { getCurrentUser } from "@/logic/authLocal";
 import AppLoginRegisterProfile from "@/components/profile/AppLoginRegisterProfile";
-import AdminDashboard from "@/components/admin/AdminDashboard"; // IMPORT ADMIN DASHBOARD
+import AdminDashboard from "@/components/admin/AdminDashboard";
 
 export default function Home() {
   const [showSplash, setShowSplash] = useState(true);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [user, setUser] = useState<any>(undefined); // undefined biar SSR safe
+  const [user, setUser] = useState<any>(undefined);
 
   useEffect(() => {
     setUser(getCurrentUser());
   }, []);
 
+  // --- CEK & HAPUS SPLASH EXPIRED (5 MENIT) ---
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 2000);
-    return () => clearTimeout(timer);
+    if (typeof window === "undefined") return;
+    const item = localStorage.getItem("hasSeenSplash");
+    if (item) {
+      try {
+        const { expiresAt } = JSON.parse(item);
+        if (Date.now() > expiresAt) {
+          // Sudah expired, hapus
+          localStorage.removeItem("hasSeenSplash");
+          setShowSplash(true);
+        } else {
+          setShowSplash(false);
+        }
+      } catch {
+        // Error parsing (misal value lama), clear aja
+        localStorage.removeItem("hasSeenSplash");
+        setShowSplash(true);
+      }
+    }
   }, []);
 
-  // SplashScreen dulu
-  if (showSplash) return <SplashScreen />;
+  // Set Splash expire 5 menit saat klik enter
+  const handleSplashContinue = () => {
+    if (typeof window !== "undefined") {
+      const expiresAt = Date.now() + 5 * 60 * 1000; // 5 menit
+      localStorage.setItem("hasSeenSplash", JSON.stringify({ expiresAt }));
+    }
+    setShowSplash(false);
+  };
 
-  // Jangan render apapun sebelum user !== undefined (biar SSR/CSR sama)
+  if (showSplash) return <SplashScreen onContinue={handleSplashContinue} />;
+
   if (typeof window !== "undefined" && user === undefined) return null;
 
-  // Belum login
   if (!user) {
     return (
       <AppLoginRegisterProfile
@@ -38,8 +61,6 @@ export default function Home() {
     );
   }
 
-  // --- DETEKSI ADMIN ---
-  // role admin = email === "admin@fourteen.com" && password === "admin123"
   if (
     user?.email === "admin@fourteen.com" &&
     user?.password === "admin123"
@@ -47,7 +68,6 @@ export default function Home() {
     return <AdminDashboard />;
   }
 
-  // User biasa: render app normal
   return (
     <CartProvider>
       {/* <Header onCheckout={() => setShowCheckout(true)} /> */}

@@ -39,10 +39,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <CartProvider
       key="cart:user:v1"
-      storageKey="cart:user:v1"
-      sessionScope="user"
-      disabled={isAdminUser === null}   // ⬅️ penting: saat prerender/loading, context tetap ada
-      metricsEndpoint="/api/user/metrics/event"
+      storageKey="cart:user:v1"  // ⬅️ penting: saat prerender/loading, context tetap ada
     >
       {children}
     </CartProvider>
