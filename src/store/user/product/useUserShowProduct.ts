@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Endpoint dinamis, jangan hardcode id di belakang!
 export const USER_SHOW_PRODUCT_URL = (id: string | number) =>
-  `http://127.0.0.1:8000/api/user/products/${id}`;
+  `https://api.nafaskarya.my.id/api/user/products/${id}`;
 
 // Tipe produk detail harus cocok sama respons API
 export interface UserShowProduct {

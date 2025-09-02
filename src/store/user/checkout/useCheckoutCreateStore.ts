@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 
-export const USER_CHECKOUT_URL = 'http://127.0.0.1:8000/api/checkout';
+export const USER_CHECKOUT_URL = 'https://api.nafaskarya.my.id/api/checkout';
 
 type CheckoutPayload = {
   cart_id: number | string;

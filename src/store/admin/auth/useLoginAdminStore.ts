@@ -35,52 +35,55 @@ function extractError(err: unknown): string {
   return "Terjadi kesalahan tidak diketahui";
 }
 
-export const useLoginAdminStore = create<LoginAdminState>(
-  (set) => ({
-    loading: false,
-    error: null,
-    success: false,
-    token: null,
-    login: async (data) => {
-      set({ loading: true, error: null, success: false });
-      try {
-        // Kirim sebagai "email", bukan "credential"
-        const response = await fetch(ADMIN_LOGIN_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify({
-            email: data.credential,    // <--- Ubah ini!
-            password: data.password,
-          }),
-        });
+export const useLoginAdminStore = create<LoginAdminState>((set) => ({
+  loading: false,
+  error: null,
+  success: false,
+  token: typeof window !== 'undefined' ? localStorage.getItem('token') : null, // Ambil token saat init
 
-        const resJson = await response.json().catch(() => null);
+  login: async (data) => {
+    set({ loading: true, error: null, success: false });
+    try {
+      const response = await fetch(ADMIN_LOGIN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.credential,
+          password: data.password,
+        }),
+      });
 
-        if (!response.ok) {
-          const message = isErrorResponse(resJson)
-            ? resJson.message
-            : 'Login failed';
-          throw new Error(message);
-        }
+      const resJson = await response.json().catch(() => null);
 
-        // =============== Tambahkan ini! =================
-        if (typeof window !== "undefined" && resJson?.token) {
-          localStorage.setItem("token", resJson.token);
-        }
-
-        set({
-          loading: false,
-          success: true,
-          token: resJson?.token || null
-        });
-      } catch (err) {
-        set({ loading: false, error: extractError(err), success: false, token: null });
+      if (!response.ok) {
+        const message = isErrorResponse(resJson)
+          ? resJson.message
+          : 'Login failed';
+        throw new Error(message);
       }
-    },
 
-    reset: () => set({ error: null, success: false, loading: false, token: null }),
-  })
-);
+      if (typeof window !== "undefined" && resJson?.token) {
+        localStorage.setItem("token", resJson.token);
+      }
+
+      set({
+        loading: false,
+        success: true,
+        token: resJson?.token || null
+      });
+    } catch (err) {
+      set({ loading: false, error: extractError(err), success: false, token: null });
+    }
+  },
+
+  // RESET YANG BENER: hapus localStorage token juga!
+  reset: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+    set({ error: null, success: false, loading: false, token: null });
+  },
+}));

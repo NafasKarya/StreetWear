@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { USER_LOGGOUT_URL } from '@/config/api-endpoints';
 
-export const USER_LOGGOUT_URL = 'http://127.0.0.1:8000/api/user/logout';
+
 
 interface UserLoggoutState {
   isLoading: boolean;

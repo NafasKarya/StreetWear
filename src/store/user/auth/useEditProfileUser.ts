@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { USER_EDIT_PROFILE_URL } from '@/config/api-endpoints';
 
-export const USER_EDIT_PROFILE_URL = 'http://127.0.0.1:8000/api/user/profile';
+
 
 export interface EditProfileUserPayload {
   name?: string;

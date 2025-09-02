@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-export const USER_CREATE_CART_URL = 'http://127.0.0.1:8000/api/cart';
+export const USER_CREATE_CART_URL = 'https://api.nafaskarya.my.id/api/cart';
 
 export interface CreateCartPayload {
   product_id: string | number;

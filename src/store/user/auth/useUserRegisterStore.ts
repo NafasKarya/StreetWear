@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { USER_REGISTER_URL } from '@/config/api-endpoints';
 
-export const USER_REGISTER_URL = 'http://127.0.0.1:8000/api/user/register';
+
 
 // Payload sekarang field-nya code!
 export interface UserRegisterPayload {

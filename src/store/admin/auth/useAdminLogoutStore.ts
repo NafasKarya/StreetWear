@@ -1,6 +1,7 @@
+import { ADMIN_LOGGOUT_URL } from "@/config/api-endpoints";
 import { create } from "zustand";
 
-export const ADMIN_LOGGOUT_URL = "http://127.0.0.1:8000/api/admin/logout";
+
 
 interface AdminLogoutState {
   loading: boolean;

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-export const USER_SEARCH_DESTINATION_URL = 'http://127.0.0.1:8000/api/wilayah/provinces';
+export const USER_SEARCH_DESTINATION_URL = 'https://api.nafaskarya.my.id/api/wilayah/provinces';
 
 type Province = {
   code: string;

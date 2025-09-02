@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import axios from 'axios';
 import { UserProduct } from '@/store/type/types'; // <--- INI WAJIB, BUKAN declare ulang!
 
-export const USER_GET_PRODUCTS_URL = 'http://127.0.0.1:8000/api/user/products';
+export const USER_GET_PRODUCTS_URL = 'https://api.nafaskarya.my.id/api/user/products';
 
 interface UserProductState {
   isLoading: boolean;

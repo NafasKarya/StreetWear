@@ -1,6 +1,7 @@
+import { ADMIN_EDIT_PROFILE_URL } from "@/config/api-endpoints";
 import { create } from "zustand";
 
-export const ADMIN_EDIT_PROFILE_URL = "http://127.0.0.1:8000/api/admin/profile";
+
 
 type EditProfilePayload = {
   name: string;

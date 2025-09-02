@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import axios from "axios";
 
-export const USER_COURIERS_URL = 'http://127.0.0.1:8000/api/couriers';
+export const USER_COURIERS_URL = 'https://api.nafaskarya.my.id/api/couriers';
 
 export type Courier = {
   id: string;

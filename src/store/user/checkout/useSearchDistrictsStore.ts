@@ -27,7 +27,7 @@ export const useSearchDistrictsStore = create<SearchDistrictsState>((set) => ({
       if (!token) throw new Error('Token tidak ditemukan. Silakan login dulu.');
 
       // Endpoint pake kode regency yang dikirim dari argumen
-      const url = `http://127.0.0.1:8000/api/wilayah/districts/${regencyCode}`;
+      const url = `https://api.nafaskarya.my.id/api/wilayah/districts/${regencyCode}`;
 
       const res = await axios.get(url, {
         headers: {

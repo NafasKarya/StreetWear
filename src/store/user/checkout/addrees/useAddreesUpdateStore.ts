@@ -34,7 +34,7 @@ export const useAddressUpdateStore = create<AddressUpdateState>((set) => ({
       const token = typeof window !== "undefined" ? localStorage.getItem('user_token') : null;
       if (!token) throw new Error('Token tidak ditemukan. Silakan login dulu.');
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.nafaskarya.my.id';
       const url = `${baseUrl}/api/checkout/addresses/${uuid}`;
 
       await axios.patch(url, payload, {

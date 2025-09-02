@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import axios from 'axios'
 
-export const USER_GET_ADDRESS_URL = 'http://127.0.0.1:8000/api/checkout/addresses'
+export const USER_GET_ADDRESS_URL = 'https://api.nafaskarya.my.id/api/checkout/addresses'
 
 export type Address = {
   uuid: string

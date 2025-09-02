@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
+import { USER_LOGIN_URL } from '@/config/api-endpoints';
 
-export const USER_LOGIN_URL = 'http://127.0.0.1:8000/api/user/login';
+
 
 export interface UserLoginPayload {
   email: string;

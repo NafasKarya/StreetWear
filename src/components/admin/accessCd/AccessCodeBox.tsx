@@ -1,62 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
-import { create } from "zustand";
+import { useAccessCodeAdminStore } from "@/store/admin/auth/useAccessCodeAdminStore";
 
-// --- STORE & TIPE --- //
-export const ADMIN_CREATE_ACCESS_CODE_URL = "http://127.0.0.1:8000/api/admin/access-code";
-
-type CreateAccessCodePayload = {
-  code: string;
-};
-
-type AccessCodeResponse = {
-  id: number;
-  code: string;
-  created_at: string;
-};
-
-type AccessCodeAdminStore = {
-  loading: boolean;
-  error: string | null;
-  data: AccessCodeResponse | null;
-  createAccessCode: (payload: CreateAccessCodePayload, token: string) => Promise<void>;
-};
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return typeof error === "string" ? error : "Unknown error";
-}
-
-export const useAccessCodeAdminStore = create<AccessCodeAdminStore>((set) => ({
-  loading: false,
-  error: null,
-  data: null,
-
-  async createAccessCode(payload, token) {
-    set({ loading: true, error: null });
-    try {
-      const res = await fetch(ADMIN_CREATE_ACCESS_CODE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to create access code");
-      }
-      const data: AccessCodeResponse = await res.json();
-      set({ data, loading: false });
-    } catch (error) {
-      set({ error: getErrorMessage(error), loading: false });
-    }
-  },
-}));
-
-// --- KOMPONEN --- //
 export default function AccessCodeBox() {
   const [accessCode, setAccessCode] = useState("");
   const {
@@ -64,17 +10,15 @@ export default function AccessCodeBox() {
     error: accessCodeError,
     data: accessCodeData,
     createAccessCode,
+    reset,
   } = useAccessCodeAdminStore();
 
   const handleCreateAccessCode = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Token not found. Silakan login ulang.");
-      return;
-    }
-    await createAccessCode({ code: accessCode }, token);
+    // token sekarang diambil langsung dari store, argumen opsional
+    await createAccessCode({ code: accessCode });
     setAccessCode("");
+    setTimeout(() => reset(), 3000); // Reset sukses/error msg auto
   };
 
   return (
