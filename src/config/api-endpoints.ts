@@ -24,6 +24,14 @@ export const USER_GET_PRODUCTS_URL = 'http://127.0.0.1:8000/api/user/products';
 export const USER_SHOW_PRODUCTS_URL = 'http://127.0.0.1:8000/api/user/products/1';
 export const USER_CREATE_CART_URL = 'http://127.0.0.1:8000/api/cart';
 export const USER_GET_CART_URL = 'http://127.0.0.1:8000/api/cart';
+export const USER_CREATE_ADDRESS_URL = 'http://127.0.0.1:8000/api/checkout/addresses';
+export const USER_GET_ADDRESS_URL = 'http://127.0.0.1:8000/api/checkout/addresses';
+export const USER_SEARCH_DESTINATION_URL = 'http://127.0.0.1:8000/api/wilayah/provinces';
+export const USER_SEARCH_REGENCIES_URL = 'http://127.0.0.1:8000/api/wilayah/regencies/11';
+export const USER_SEARCH_DISTRICTS_URL = 'http://127.0.0.1:8000/api/wilayah/districts/11.05';
+export const USER_SEARCH_VILLAGES_URL = 'http://127.0.0.1:8000/api/wilayah/villages/11.05.04';
+export const USER_CHECKOUT_URL = 'http://127.0.0.1:8000/api/checkout';
+export const USER_COURIERS_URL = 'http://127.0.0.1:8000/api/couriers';
 
 // Tambahkan endpoint lain di sini kalau perlu
 // export const USER_REGISTER_URL = '...';
