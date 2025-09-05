@@ -18,21 +18,23 @@ export const UserProductItem = React.memo(
     onClick,
     isLoading,
     disabled,
+    isLocked,
   }: {
-    product: UserProduct;  // <<< GANTI Product ke UserProduct
+    product: UserProduct;
     index: number;
     onClick?: () => void;
     isLoading?: boolean;
     disabled?: boolean;
+    isLocked?: boolean; // <--- Tambahan
   }) => {
     return (
       <div
-        className={`flex flex-col gap-2 cursor-pointer relative ${
-          disabled ? "opacity-60 pointer-events-none" : ""
-        }`}
-        onClick={onClick}
-        tabIndex={disabled ? -1 : 0}
-        aria-disabled={disabled}
+        className={`flex flex-col gap-2 cursor-pointer relative transition-all duration-200
+          ${disabled || isLocked ? "opacity-60 pointer-events-none select-none" : ""}
+        `}
+        onClick={!isLocked && !disabled ? onClick : undefined}
+        tabIndex={disabled || isLocked ? -1 : 0}
+        aria-disabled={disabled || isLocked}
       >
         <div className="relative w-full h-72 rounded-xl overflow-hidden border border-white/10 shadow-md group">
           <Image
@@ -40,7 +42,7 @@ export const UserProductItem = React.memo(
             alt={product.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className={`object-cover transition-transform duration-500 group-hover:scale-105 ${isLocked ? "blur-[2px]" : ""}`}
             priority={index === 0}
           />
           {product.back_image && (
@@ -49,7 +51,7 @@ export const UserProductItem = React.memo(
               alt={`${product.title} hover`}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              className={`object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${isLocked ? "blur-[2px]" : ""}`}
             />
           )}
           {isLoading && (
@@ -60,23 +62,28 @@ export const UserProductItem = React.memo(
               </svg>
             </div>
           )}
+          {isLocked && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 text-yellow-400 text-lg font-bold z-20 uppercase gap-1">
+              <span>🔒 LOCKED</span>
+              <span className="text-xs font-normal text-white/60">Masukkan kode buat akses!</span>
+            </div>
+          )}
         </div>
         <div className="px-1 flex items-center justify-between gap-2">
-<div>
-  <p className="text-xs sm:text-sm text-zinc-400">{product.name}</p>
-  <p className="text-xs text-zinc-500 uppercase">{product.category_name}</p>
-  {typeof product.price === "number" && (
-    <p className="text-sm font-semibold text-emerald-400">
-      Rp {product.price.toLocaleString("id-ID")}
-    </p>
-  )}
-  {typeof product.expired_at === "string" && product.expired_at && (
-    <p className="mt-1 text-[10px] sm:text-xs text-zinc-500 uppercase">
-      Exp: {product.expired_at}
-    </p>
-  )}
-</div>
-
+          <div>
+            <p className="text-xs sm:text-sm text-zinc-400">{product.name}</p>
+            <p className="text-xs text-zinc-500 uppercase">{product.category_name}</p>
+            {typeof product.price === "number" && (
+              <p className="text-sm font-semibold text-emerald-400">
+                Rp {product.price.toLocaleString("id-ID")}
+              </p>
+            )}
+            {typeof product.expired_at === "string" && product.expired_at && (
+              <p className="mt-1 text-[10px] sm:text-xs text-zinc-500 uppercase">
+                Exp: {product.expired_at}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -84,7 +91,7 @@ export const UserProductItem = React.memo(
 );
 UserProductItem.displayName = "UserProductItem";
 
-// LIST
+// === LIST ===
 export default function UserProductList({
   onProductClick,
 }: {
@@ -92,6 +99,16 @@ export default function UserProductList({
 }) {
   const { products, isLoading, error, fetchProducts } = useUserProduct();
   const [loadingUuid, setLoadingUuid] = useState<string | number | null>(null);
+
+  // === GET KODE UNLOCK DARI LOCALSTORAGE ===
+  const [unlockCode, setUnlockCode] = useState("");
+  useEffect(() => {
+    setUnlockCode(
+      typeof window !== "undefined"
+        ? localStorage.getItem("user_unlock_code") || ""
+        : ""
+    );
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -134,7 +151,8 @@ export default function UserProductList({
     );
   }
 
-  const handleProductClick = (uuid: string | number) => {
+  const handleProductClick = (uuid: string | number, isLocked?: boolean) => {
+    if (isLocked) return;
     setLoadingUuid(uuid);
     onProductClick?.(uuid);
   };
@@ -147,16 +165,22 @@ export default function UserProductList({
             {title}
           </h2>
           <ul className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-            {group.map((product, index) => (
-              <UserProductItem
-                key={product.uuid || product.id}
-                product={product}
-                index={index}
-                onClick={() => handleProductClick(product.uuid)}
-                isLoading={loadingUuid === product.uuid}
-                disabled={!!loadingUuid}
-              />
-            ))}
+            {group.map((product, index) => {
+              const isLocked =
+                !!product.hidden_code &&
+                product.hidden_code !== unlockCode;
+              return (
+                <UserProductItem
+                  key={product.uuid || product.id}
+                  product={product}
+                  index={index}
+                  isLocked={isLocked}
+                  onClick={() => handleProductClick(product.uuid, isLocked)}
+                  isLoading={loadingUuid === product.uuid}
+                  disabled={!!loadingUuid || isLocked}
+                />
+              );
+            })}
           </ul>
         </section>
       ))}

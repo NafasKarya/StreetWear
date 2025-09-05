@@ -1,37 +1,40 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import dynamic from "next/dynamic";
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useLoginAdminStore } from '@/store/admin/auth/useLoginAdminStore';
-
-const VideoBackground = dynamic(() => import('@/components/auth/VideoBackground'), { ssr: false });
 
 const LoginAdminPage: React.FC = () => {
   const [credential, setCredential] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [showLogoutModal, setShowLogoutModal] = useState(false); // state modal logout
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const router = useRouter();
   const { login, loading, error, success, reset } = useLoginAdminStore();
 
-  // Reset error/success saat mount
-  useEffect(() => { reset(); }, [reset]);
+  // Reset error if user edits input
+  useEffect(() => {
+    if (error && (credential || password)) {
+      reset();
+    }
+    // eslint-disable-next-line
+  }, [credential, password]);
 
-  // Listen perubahan success, lalu redirect
+  // Redirect if success
   useEffect(() => {
     if (success) {
       router.push("/admins/dashboard");
     }
   }, [success, router]);
 
-  // Cek apakah logout berhasil dari localStorage
+  // Show logout success modal
   useEffect(() => {
     if (localStorage.getItem("logoutSuccess") === "true") {
       setShowLogoutModal(true);
-      localStorage.removeItem("logoutSuccess"); // hapus setelah dipakai
-      const timer = setTimeout(() => setShowLogoutModal(false), 3000); // auto hilang
+      localStorage.removeItem("logoutSuccess");
+      const timer = setTimeout(() => setShowLogoutModal(false), 3000);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -43,14 +46,24 @@ const LoginAdminPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      <VideoBackground />
+      {/* Background image */}
+      <Image
+        src="/assets/images/splash.jpg" // ganti path sesuai image lo di /public
+        alt="Admin Background"
+        fill
+        priority
+        className="object-cover"
+      />
+      {/* Overlay */}
       <div className="absolute inset-0 bg-black/70" />
+      
+      {/* Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
         <div className="w-full max-w-md text-center">
           <h1 className="text-5xl font-extrabold text-white uppercase">ADMIN LOGIN</h1>
           <p className="mt-2 text-lg text-white">Login Akun Admin</p>
 
-          {/* MODAL LOGOUT SUKSES */}
+          {/* Logout success modal */}
           {showLogoutModal && (
             <div className="fixed inset-0 flex items-center justify-center z-50">
               <div className="bg-white/90 backdrop-blur-md text-black rounded-xl shadow-lg px-8 py-6 animate-fadeIn">

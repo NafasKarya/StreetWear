@@ -45,8 +45,13 @@ export default function AdminProductUploadForm({
     frontImage: null,
     backImage: null,
     galleryImages: [],
-    category_name: "",  // State untuk kategori
+    category_name: "",
   });
+
+  // ===== Tambahan produk hidden =====
+  const [hiddenCode, setHiddenCode] = useState(""); // manual kode hidden
+  const [autoHiddenCode, setAutoHiddenCode] = useState(false); // auto random kode
+  // =================================
 
   const router = useRouter();
 
@@ -65,8 +70,10 @@ export default function AdminProductUploadForm({
         frontImage: null,
         backImage: null,
         galleryImages: [],
-        category_name: initialData.category_name || "",  // Set category_name saat edit
+        category_name: initialData.category_name || "",
       });
+      setHiddenCode(initialData.hidden_code || "");
+      setAutoHiddenCode(false);
     }
   }, [mode, initialData]);
 
@@ -114,14 +121,17 @@ export default function AdminProductUploadForm({
         front_image: formData.frontImage,
         back_image: formData.backImage,
         gallery_images: formData.galleryImages,
-        category_name: formData.category_name,  // Tambahkan category_name ke payload
+        category_name: formData.category_name,
+        // ========== Tambahan hidden ==========
+        hidden_code: hiddenCode.trim() ? hiddenCode.trim() : undefined,
+        auto_hidden_code: autoHiddenCode ? true : undefined,
+        // =====================================
       };
 
       try {
         await onSubmit(payload);
 
         const success = useAdminProductStore.getState().success;
-
         if (success) {
           router.push("/admins/dashboard");
         }
@@ -188,7 +198,7 @@ export default function AdminProductUploadForm({
           </section>
 
           <aside className="space-y-6">
-            {/* Add category input */}
+            {/* Category Input */}
             <div>
               <label className="block text-xs font-bold tracking-widest uppercase text-zinc-300 mb-2">
                 Category Name
@@ -200,6 +210,35 @@ export default function AdminProductUploadForm({
                 placeholder="Enter category name"
                 className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder:text-zinc-500"
               />
+            </div>
+
+            {/* Produk Hidden */}
+            <div>
+              <label className="block text-xs font-bold tracking-widest uppercase text-yellow-400 mb-1">
+                Hidden Code (optional)
+              </label>
+              <input
+                type="text"
+                value={hiddenCode}
+                onChange={(e) => setHiddenCode(e.target.value)}
+                placeholder="Masukkan kode produk hidden (atau kosongkan)"
+                className="w-full bg-black/40 border border-yellow-400/30 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder:text-zinc-500 mb-1"
+              />
+              <div className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  id="autoHiddenCode"
+                  checked={autoHiddenCode}
+                  onChange={() => setAutoHiddenCode((x) => !x)}
+                  className="accent-yellow-400"
+                />
+                <label htmlFor="autoHiddenCode" className="text-zinc-400">
+                  Random kode otomatis (abaikan input manual jika dicentang)
+                </label>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Jika diisi, produk hanya bisa diakses pakai kode ini (atau random otomatis).
+              </p>
             </div>
 
             <ProductMediaAndSubmit

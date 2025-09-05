@@ -1,4 +1,3 @@
-// ProductList.tsx
 "use client";
 import React, { useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -10,15 +9,24 @@ import { useAdminProductStore } from "@/store/admin/product/useAdminProductStore
 
 type Props = {
   products: Product[];
+  unlockedHiddenCodes?: string[]; // <-- support banyak kode!
 };
 
 export const ProductItem = React.memo(
-  ({ product, index }: { product: Product; index: number }) => {
+  ({
+    product,
+    index,
+    unlocked = true, // default true (biar gak blur kalau unlocked)
+  }: {
+    product: Product;
+    index: number;
+    unlocked?: boolean;
+  }) => {
     const router = useRouter();
     const { deleteProduct } = useAdminProductStore();
 
     const displayPrice = useMemo(() => {
-      const sizeS = product.sizes?.find((s) => s.size.toUpperCase() === "S");
+      const sizeS = product.sizes?.find((s) => s.size?.toUpperCase() === "S");
       if (sizeS) return Number(sizeS.price);
       if (product.sizes && product.sizes.length > 0) {
         return Math.min(...product.sizes.map((s) => Number(s.price)));
@@ -31,10 +39,19 @@ export const ProductItem = React.memo(
       [product.expired_at]
     );
 
+    // HIDDEN PRODUCT LOGIC
+    const productHiddenCode =
+      typeof product.hidden_code === "string" ? product.hidden_code : "";
+    const isHidden = !!productHiddenCode && productHiddenCode.trim() !== "";
+
     return (
       <li className="flex flex-col gap-2">
         <div
-          className="relative w-full h-72 rounded-xl overflow-hidden border border-white/10 shadow-md hover:shadow-xl transition group cursor-pointer"
+          className={`relative w-full h-72 rounded-xl overflow-hidden border border-white/10 shadow-md hover:shadow-xl transition group cursor-pointer ${
+            isHidden && !unlocked
+              ? "blur-sm grayscale pointer-events-none select-none opacity-60"
+              : ""
+          }`}
           onClick={() => router.push(`/admins/${product.uuid}`)}
         >
           <Image
@@ -53,6 +70,14 @@ export const ProductItem = React.memo(
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             />
+          )}
+          {isHidden && !unlocked && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-10 rounded-xl">
+              <span className="text-3xl">🔒</span>
+              <span className="text-xs mt-2 text-yellow-300 font-bold uppercase tracking-wider">
+                Hidden Product
+              </span>
+            </div>
           )}
         </div>
 
@@ -97,7 +122,11 @@ export const ProductItem = React.memo(
 );
 ProductItem.displayName = "ProductItem";
 
-export default function ProductList({ products }: Props) {
+// MAIN LIST COMPONENT (support array unlock code)
+export default function ProductList({
+  products,
+  unlockedHiddenCodes = [],
+}: Props) {
   const groupedProducts = useMemo(
     () =>
       Object.entries(
@@ -117,9 +146,20 @@ export default function ProductList({ products }: Props) {
             {title}
           </h2>
           <ul className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-            {group.map((product, index) => (
-              <ProductItem key={product.uuid} product={product} index={index} />
-            ))}
+            {group.map((product, index) => {
+              // Cek apakah hidden_code produk ini ADA di array unlocked
+              const isUnlocked = product.hidden_code
+                ? unlockedHiddenCodes.includes(String(product.hidden_code).trim())
+                : true;
+              return (
+                <ProductItem
+                  key={product.uuid}
+                  product={product}
+                  index={index}
+                  unlocked={isUnlocked}
+                />
+              );
+            })}
           </ul>
         </section>
       ))}

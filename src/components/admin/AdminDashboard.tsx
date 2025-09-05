@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useMemo, useCallback } from "react"; // Pastikan useMemo diimpor
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 
 import { useRouter } from "next/navigation";
 import { Upload, Loader2, PackageOpen } from "lucide-react";
@@ -7,7 +7,6 @@ import { Upload, Loader2, PackageOpen } from "lucide-react";
 import AdminSearch from "@/components/admin/search/AdminSearch";
 import ProductList from "./product/ProductList";
 import Pagination from "./product/Pagination";
-import AccessCodeBox from "./accessCd/AccessCodeBox";
 import AdminHeader from "./header/AdminHeader";
 import CategoryCard from "./upload/category/CategoryCard";
 import { useAdminProductStore } from "@/store/admin/product/useAdminProductStore";
@@ -39,19 +38,31 @@ const formatWIB = () => {
   });
 };
 
-const DashboardSkeleton = () => {
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex flex-col gap-2 animate-pulse">
-          <div className="w-full h-72 bg-zinc-800/40 rounded-xl" />
-          <div className="h-4 w-1/2 bg-zinc-700/40 rounded" />
-          <div className="h-3 w-1/3 bg-zinc-700/30 rounded" />
-        </div>
-      ))}
-    </div>
-  );
-};
+function getUnlockedCodes() {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem("unlockedHiddenCodes") || "[]");
+  } catch {
+    return [];
+  }
+}
+function saveUnlockedCodes(arr: string[]) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("unlockedHiddenCodes", JSON.stringify(arr));
+  }
+}
+
+const DashboardSkeleton = () => (
+  <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
+    {Array.from({ length: 6 }).map((_, i) => (
+      <div key={i} className="flex flex-col gap-2 animate-pulse">
+        <div className="w-full h-72 bg-zinc-800/40 rounded-xl" />
+        <div className="h-4 w-1/2 bg-zinc-700/40 rounded" />
+        <div className="h-3 w-1/3 bg-zinc-700/30 rounded" />
+      </div>
+    ))}
+  </div>
+);
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -65,37 +76,60 @@ export default function AdminDashboard() {
 
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { getAdminProducts, products, loading, error, getCategoriesFromProducts, categories } = useAdminProductStore();
+  // Array kode yg pernah berhasil
+  const [unlockedHiddenCodes, setUnlockedHiddenCodes] = useState<string[]>([]);
+  const [hiddenCodeInput, setHiddenCodeInput] = useState(""); // input only
+
+  const {
+    getAdminProducts,
+    products,
+    loading,
+    error,
+    getCategoriesFromProducts,
+    categories,
+  } = useAdminProductStore();
 
   const handleGoToUpload = useCallback(() => {
     setUploadLoading(true);
     router.push("/admins/upload");
   }, [router]);
 
-  // UseEffect for loading initial data
+  // Load unlocked code list from localStorage
   useEffect(() => {
-    getAdminProducts(searchQuery, selectedCategory); // Fetch products
-    getCategoriesFromProducts(); // Fetch categories
+    setUnlockedHiddenCodes(getUnlockedCodes());
+  }, []);
+
+  // Ambil produk (nggak perlu kirim kode, FE yang handle blur)
+  useEffect(() => {
+    getAdminProducts(searchQuery, selectedCategory,);
+    getCategoriesFromProducts();
     setGreeting(getGreeting());
-    const randomPick = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
+    const randomPick =
+      BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
     setBgImage(randomPick);
 
     setTimeWIB(formatWIB());
     const interval = setInterval(() => setTimeWIB(formatWIB()), 1000);
     return () => clearInterval(interval);
-  }, [getAdminProducts, getCategoriesFromProducts, searchQuery, selectedCategory]); // Dependencies should remain
+  }, [getAdminProducts, getCategoriesFromProducts, searchQuery, selectedCategory]);
 
-  // UseMemo to optimize filtering process
+  // === CONSOLE LOG: Liat data raw dari API ===
+  useEffect(() => {
+    if (products.length > 0) {
+      console.log("=== RAW PRODUCTS DARI API ===");
+      console.table(products); // Liat bentuk tabel
+    }
+  }, [products]);
+
+  // === NO FILTER: SEMUA PRODUK KELUAR, FILTER SEARCH/KATEGORI DOANG ===
   const showProducts = useMemo(() => {
     return products.filter((p) => {
       const isNameMatch =
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase());
-
       const isCategoryMatch =
         selectedCategory === "" ||
-        p.category_name.toLowerCase() === selectedCategory.toLowerCase();
-
+        (p.category_name || "").toLowerCase() === selectedCategory.toLowerCase();
       return isNameMatch && isCategoryMatch;
     });
   }, [products, searchQuery, selectedCategory]);
@@ -104,12 +138,46 @@ export default function AdminDashboard() {
   const start = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedProducts = showProducts.slice(start, start + ITEMS_PER_PAGE);
 
+  // ======= UNLOCK HANDLER
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = hiddenCodeInput.trim();
+    if (!code) return;
+
+    // Cek ada nggak produk dengan kode hidden_code = code
+    const found = products.find(
+      (p) => p.hidden_code && String(p.hidden_code).trim() === code
+    );
+    if (found) {
+      // Kalau belum ada di array, masukin!
+      if (!unlockedHiddenCodes.includes(code)) {
+        const updated = [...unlockedHiddenCodes, code];
+        setUnlockedHiddenCodes(updated);
+        saveUnlockedCodes(updated);
+      }
+      setHiddenCodeInput(""); // clear input
+    } else {
+      // Kasih feedback kalau nggak ada (bisa toast/alert)
+      alert("Kode tidak ditemukan atau tidak valid!");
+    }
+  };
+
+  // Optional: buat tombol reset unlock
+  const handleResetUnlocks = () => {
+    setUnlockedHiddenCodes([]);
+    saveUnlockedCodes([]);
+  };
+
   return (
     <div className="min-h-screen relative flex flex-col items-center justify-start px-6 py-12 text-white">
       {/* Background */}
       {bgImage && (
         <div className="absolute inset-0 -z-10">
-          <img src={bgImage} alt="Background" className="w-full h-full object-cover" />
+          <img
+            src={bgImage}
+            alt="Background"
+            className="w-full h-full object-cover"
+          />
           <div className="absolute inset-0 bg-black/80" />
           <div className="absolute inset-0 backdrop-blur-3xl bg-white/5" />
           <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-black via-black/80 to-transparent" />
@@ -125,7 +193,9 @@ export default function AdminDashboard() {
               type="button"
               onClick={handleGoToUpload}
               disabled={uploadLoading}
-              className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold uppercase tracking-widest text-sm border border-white/30 hover:bg-white/10 active:scale-95 transition ${uploadLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`inline-flex items-center gap-2 rounded-xl px-6 py-3 font-semibold uppercase tracking-widest text-sm border border-white/30 hover:bg-white/10 active:scale-95 transition ${
+                uploadLoading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
               {uploadLoading ? (
                 <>
@@ -140,8 +210,29 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* Access Code */}
-        <AccessCodeBox />
+        {/* Hidden Code Input + Reset */}
+        <form className="flex items-center gap-2 mb-6" onSubmit={handleUnlock}>
+          <input
+            type="text"
+            placeholder="Masukkan Hidden Code.."
+            value={hiddenCodeInput}
+            onChange={(e) => setHiddenCodeInput(e.target.value)}
+            className="rounded-lg px-3 py-2 bg-zinc-900 text-white border border-white/20 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-lg font-semibold text-xs bg-yellow-500 text-black"
+          >
+            Unlock
+          </button>
+          {/* <button
+            type="button"
+            onClick={handleResetUnlocks}
+            className="px-3 py-2 rounded-lg text-xs bg-zinc-700 text-white"
+          >
+            Reset
+          </button> */}
+        </form>
 
         <AdminSearch
           searchQuery={searchQuery}
@@ -177,7 +268,10 @@ export default function AdminDashboard() {
           )}
           {!loading && !error && (
             <>
-              <ProductList products={paginatedProducts} />
+              <ProductList
+                products={paginatedProducts}
+                unlockedHiddenCodes={unlockedHiddenCodes}
+              />
               {totalPages > 1 && (
                 <Pagination
                   totalPages={totalPages}

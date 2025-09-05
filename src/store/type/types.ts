@@ -6,21 +6,25 @@ export interface ProductSizeInput {
   stock: number;
 }
 
-export interface StoreProductPayload {
+export type StoreProductPayload = {
   title: string;
   name: string;
   description: string;
   expired_at: string;
   sizes: ProductSizeInput[];
-  front_image: File | null;
-  back_image: File | null;
+  front_image?: File;
+  back_image?: File;
   gallery_images: File[];
-  category_name?: string;  // Tambahkan category_name, opsional untuk backend
-}
+  category_name?: string;
+  // ⬇️ TAMBAH INI BRO!
+  code?: string;
+  hidden_code?: string;
+};
+
 
 export interface Product {
   id: number;
-  uuid: string; // ← DITAMBAHKAN
+  uuid: string;
   title: string;
   name: string;
   description: string;
@@ -31,10 +35,14 @@ export interface Product {
   gallery_images: string[];
   created_at: string;
   updated_at: string;
-  category_uuid: string;  // Tambahkan category_uuid untuk mengaitkan dengan kategori
-  category_name: string;  // Tambahkan category_name untuk menyimpan nama kategori
-  category_slug: string;  // Tambahkan category_slug untuk menyimpan slug kategori
+  category_uuid: string;
+  category_name: string;
+  category_slug: string;
+  // Tambahan untuk fitur hidden/blurring
+  hidden_code?: string;    // <--- Tambahin ini!
+  is_locked?: boolean;     // <--- Ini juga sekalian kalau BE support blur
 }
+
 
 export interface ProductSize {
   size: string;
@@ -69,5 +77,6 @@ export interface UserProduct {
   category_name: string;
   category_slug: string;
   expired_at?: string;        // optional
+  is_locked?: boolean;        // <--- TAMBAHIN INI BRO
   [key: string]: unknown;
 }

@@ -12,8 +12,6 @@ const RegisterUserPage: React.FC = () => {
 
   const { isLoading, error, isSuccess, registerUser } = useUserRegisterStore();
 
-  // === GANTI KE CODE REF ===
-  const codeRef = useRef<HTMLInputElement>(null);
   const usernameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -21,7 +19,6 @@ const RegisterUserPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const code = codeRef.current?.value || "";
     const name = usernameRef.current?.value || "";
     const email = emailRef.current?.value || "";
     const password = passwordRef.current?.value || "";
@@ -32,13 +29,14 @@ const RegisterUserPage: React.FC = () => {
       return;
     }
 
-    await registerUser({
-      code,
-      name,
-      email,
-      password,
-      password_confirmation,
-    });
+await registerUser({
+  name,
+  email,
+  password,
+  password_confirmation,
+  code: "", // <=== fix error disini
+});
+
 
     if (isSuccess) {
       setTimeout(() => router.push("/user/auth/login"), 1200);
@@ -67,17 +65,6 @@ const RegisterUserPage: React.FC = () => {
         )}
 
         <form className="mt-8 space-y-4" autoComplete="off" onSubmit={handleSubmit}>
-          {/* Code */}
-          <div>
-            <input
-              ref={codeRef}
-              id="code"
-              type="text"
-              placeholder="Code"
-              required
-              className="w-full px-4 py-3 rounded bg-white placeholder-black text-black border border-grey-300 focus:outline-none"
-            />
-          </div>
           {/* Username */}
           <div>
             <input

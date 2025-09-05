@@ -25,9 +25,8 @@ interface AdminProductStoreState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   storeProduct: (data: StoreProductPayload) => Promise<void>;
-  // ⬇️ INI YANG DIUBAH!
-  getAdminProducts: (search?: string, selectedCategory?: string) => Promise<void>;
-  getProductDetail: (uuid: string) => Promise<void>;
+  getAdminProducts: (search?: string, selectedCategory?: string) => Promise<void>; // <= code DIHAPUS
+  getProductDetail: (uuid: string, code?: string) => Promise<void>;
   deleteProduct: (uuid: string) => Promise<void>;
   getCategoriesFromProducts: () => void;
   reset: () => void;
@@ -118,6 +117,12 @@ export const useAdminProductStore = create<AdminProductStoreState>((set, get) =>
       if (data.category_name) {
         formData.append("category_name", data.category_name);
       }
+      if (data.code) {
+        formData.append("code", data.code);
+      }
+      if (data.hidden_code) {
+        formData.append("hidden_code", data.hidden_code);
+      }
 
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
@@ -153,17 +158,19 @@ export const useAdminProductStore = create<AdminProductStoreState>((set, get) =>
     }
   },
 
-  // ⬇️ PERHATIKAN: Sekarang support 2 argumen!
+  // === DI SINI YANG DIPERBAIKI ===
   getAdminProducts: async (search = "", selectedCategory = "") => {
     set({ loading: true, error: null });
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-      // Gabungkan pencarian dengan kategori
       let url = `${ADMIN_GET_PRODUCTS_URL}`;
-      if (search.trim() !== "" || selectedCategory !== "") {
-        url = `${ADMIN_GET_SEARCH_URL}?search=${encodeURIComponent(search)}&category=${encodeURIComponent(selectedCategory)}`;
-      }
+      const params = new URLSearchParams();
+      if (search && search.trim() !== "") params.append("search", search);
+      if (selectedCategory) params.append("category", selectedCategory);
+      // === TIDAK ADA params.append("code", ...) lagi ===
+
+      if ([...params].length > 0) url += `?${params.toString()}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -190,7 +197,7 @@ export const useAdminProductStore = create<AdminProductStoreState>((set, get) =>
       }
 
       set({ loading: false, products: resJson.products || [] });
-      get().getCategoriesFromProducts(); // Ambil kategori dari produk yang didapat
+      get().getCategoriesFromProducts();
     } catch (err) {
       set({ loading: false, error: extractError(err) });
     }
@@ -202,12 +209,15 @@ export const useAdminProductStore = create<AdminProductStoreState>((set, get) =>
     set({ categories });
   },
 
-  getProductDetail: async (uuid: string) => {
+  getProductDetail: async (uuid: string, code = "") => {
     set({ loading: true, error: null });
     try {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const response = await fetch(`${ADMIN_SHOW_PRODUCT_URL}/${uuid}`, {
+      let url = `${ADMIN_SHOW_PRODUCT_URL}/${uuid}`;
+      if (code) url += `?code=${encodeURIComponent(code)}`;
+
+      const response = await fetch(url, {
         method: "GET",
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),

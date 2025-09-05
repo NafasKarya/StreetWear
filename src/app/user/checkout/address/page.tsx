@@ -113,7 +113,7 @@ export default function AddressFormPage() {
   useEffect(() => {
     if (createSuccess) {
       resetStatus();
-      router.push("/checkout");
+      router.push("/user/checkout");
     }
   }, [createSuccess, resetStatus, router]);
 

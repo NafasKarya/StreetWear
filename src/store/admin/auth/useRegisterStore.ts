@@ -36,34 +36,36 @@ function extractError(err: unknown): string {
   return "Terjadi kesalahan tidak diketahui";
 }
 
-export const useRegisterStore = create<RegisterState>(
-  (set: (partial: Partial<RegisterState> | RegisterState) => void) => ({
-    loading: false,
-    error: null,
-    success: false,
-    register: async (data: RegisterAdminPayload) => {
-      set({ loading: true, error: null, success: false });
-      try {
-        const response = await fetch(ADMIN_REGISTER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
+export const useRegisterStore = create<RegisterState>((set) => ({
+  loading: false,
+  error: null,
+  success: false,
+  register: async (data: RegisterAdminPayload) => {
+    set({ loading: true, error: null, success: false });
+    try {
+      const response = await fetch(ADMIN_REGISTER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include', // <== INI PENTING
+        body: JSON.stringify(data),
+      });
 
-        const resJson = await response.json().catch(() => null);
+      const resJson = await response.json().catch(() => null);
 
-        if (!response.ok) {
-          const message = isErrorResponse(resJson)
-            ? resJson.message
-            : 'Register failed';
-          throw new Error(message);
-        }
-
-        set({ loading: false, success: true });
-      } catch (err) {
-        set({ loading: false, error: extractError(err), success: false });
+      if (!response.ok) {
+        const message = isErrorResponse(resJson)
+          ? resJson.message
+          : 'Register failed';
+        throw new Error(message);
       }
-    },
-    reset: () => set({ error: null, success: false, loading: false }),
-  })
-);
+
+      set({ loading: false, success: true });
+    } catch (err) {
+      set({ loading: false, error: extractError(err), success: false });
+    }
+  },
+  reset: () => set({ error: null, success: false, loading: false }),
+}));

@@ -1,12 +1,11 @@
-'use client';
-import React, { useRef, useState, useEffect } from 'react';
-import dynamic from "next/dynamic";
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+"use client";
+import React, { useRef, useState, useEffect } from "react";
+import Image from "next/image";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUserLoginStore } from "@/store/user/auth/useUserLoginStore";
-
-const VideoBackground = dynamic(() => import('@/components/auth/VideoBackground'), { ssr: false });
+import { useUserMeStore } from "@/store/user/auth/useUserMeStore";
 
 const LoginUserPage: React.FC = () => {
   const [showPass, setShowPass] = useState(false);
@@ -14,7 +13,8 @@ const LoginUserPage: React.FC = () => {
   const router = useRouter();
 
   // Ambil store + reset action
-  const { isLoading, error, isSuccess, loginUser, resetLoginState } = useUserLoginStore();
+  const { isLoading, error, isSuccess, loginUser, resetLoginState } =
+    useUserLoginStore();
 
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -27,10 +27,17 @@ const LoginUserPage: React.FC = () => {
   // Redirect dashboard kalau login sukses
   useEffect(() => {
     if (isSuccess) {
-      const timer = setTimeout(() => {
-        router.push("/user/dashboard");
-      }, 800);
-      return () => clearTimeout(timer);
+      useUserMeStore
+        .getState()
+        .fetchUser()
+        .then(() => {
+          const user = useUserMeStore.getState().user;
+          if (user && (user.is_activated === false || user.is_activated === 0)) {
+            router.push("/user/auth/activated-code");
+          } else {
+            router.push("/user/dashboard");
+          }
+        });
     }
   }, [isSuccess, router]);
 
@@ -51,11 +58,21 @@ const LoginUserPage: React.FC = () => {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      <VideoBackground />
+      {/* IMAGE BACKGROUND */}
+      <Image
+        src="/assets/images/splash.jpg" // ganti sesuai path di /public
+        alt="Background"
+        fill
+        priority
+        className="object-cover"
+      />
       <div className="absolute inset-0 bg-black/70" />
+
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
         <div className="w-full max-w-md text-center">
-          <h1 className="text-5xl font-extrabold text-white uppercase">USER LOGIN</h1>
+          <h1 className="text-5xl font-extrabold text-white uppercase">
+            USER LOGIN
+          </h1>
           <p className="mt-2 text-lg text-white">Login Account User</p>
 
           {/* Error message */}
@@ -70,7 +87,11 @@ const LoginUserPage: React.FC = () => {
             </div>
           )}
 
-          <form className="mt-8 space-y-4" autoComplete="off" onSubmit={handleSubmit}>
+          <form
+            className="mt-8 space-y-4"
+            autoComplete="off"
+            onSubmit={handleSubmit}
+          >
             <div>
               <input
                 ref={emailRef}
@@ -87,7 +108,7 @@ const LoginUserPage: React.FC = () => {
               <input
                 ref={passwordRef}
                 id="password"
-                type={showPass ? 'text' : 'password'}
+                type={showPass ? "text" : "password"}
                 placeholder="Password"
                 autoComplete="current-password"
                 required
@@ -97,9 +118,11 @@ const LoginUserPage: React.FC = () => {
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-black"
-                onClick={() => setShowPass(v => !v)}
+                onClick={() => setShowPass((v) => !v)}
                 tabIndex={-1}
-                aria-label={showPass ? 'Sembunyikan password' : 'Tampilkan password'}
+                aria-label={
+                  showPass ? "Sembunyikan password" : "Tampilkan password"
+                }
               >
                 {showPass ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
               </button>
@@ -137,7 +160,7 @@ const LoginUserPage: React.FC = () => {
           </form>
 
           <p className="mt-6 text-sm text-white">
-            don't have account user?{' '}
+            don't have account user?{" "}
             <button
               type="button"
               onClick={handleRegisterClick}

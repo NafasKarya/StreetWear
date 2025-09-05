@@ -14,6 +14,7 @@ import { useAddressUpdateStore } from "@/store/user/checkout/addrees/useAddreesU
 import { useUserCartStore } from "@/store/user/cart/useUserCartStore";
 import { useCheckoutCreateStore } from "@/store/user/checkout/useCheckoutCreateStore";
 import { useCouriersStore } from "@/store/user/checkout/couriers/useCouriersStore";
+import { usePaymentStore } from "@/store/user/payment/usePaymentStore";
 
 export default function CheckoutPage() {
   const { cart, isLoading: loadingCart, error: cartError, fetchCart } = useUserCartStore();
@@ -30,10 +31,13 @@ export default function CheckoutPage() {
   const [service, setService] = useState<string | null>(null);
 
   const [shippingCost] = useState(30000);
-  const [shippingEstimate] = useState("2-4 Hari");
+  const [shippingEstimate] = useState("2-4 Days");
 
   const [showPolicy, setShowPolicy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+
+  // 🔥 Agreement checkbox state
+  const [agreed, setAgreed] = useState(false);
 
   const router = useRouter();
 
@@ -56,7 +60,6 @@ export default function CheckoutPage() {
     : [];
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
   const grandTotal = subtotal + shippingCost;
 
   const openModal = (method: string) => {
@@ -92,6 +95,15 @@ export default function CheckoutPage() {
     resetStatus: resetCheckoutStatus,
   } = useCheckoutCreateStore();
 
+  // --- Payment Store (Midtrans) ---
+  const {
+    createPayment,
+    data: paymentData,
+    error: paymentError,
+    loading: paymentLoading,
+    clear: clearPayment,
+  } = usePaymentStore();
+
   useEffect(() => {
     fetchAddresses();
   }, [fetchAddresses]);
@@ -112,21 +124,25 @@ export default function CheckoutPage() {
   };
 
   const handleCheckout = async () => {
+    if (!agreed) {
+      alert("You must check 'I Agree' before proceeding with checkout.");
+      return;
+    }
     if (!cart || cart.length === 0) {
-      alert("Keranjang kosong, ga bisa checkout!");
+      alert("Your cart is empty, cannot checkout.");
       return;
     }
     if (!selectedAddress) {
-      alert("Pilih alamat pengiriman dulu!");
+      alert("Please select a shipping address first.");
       return;
     }
     const selectedAddr = addresses.find((a) => a.uuid === selectedAddress);
     if (!selectedAddr) {
-      alert("Alamat tidak ditemukan.");
+      alert("Address not found.");
       return;
     }
     if (!courier || !service) {
-      alert("Pilih kurir & service dulu!");
+      alert("Please select courier & service first.");
       return;
     }
     const cart_id = cart[0]?.cart_id ?? cart[0]?.id ?? 1;
@@ -153,16 +169,42 @@ export default function CheckoutPage() {
     await createCheckout(payload);
   };
 
+  // Trigger Midtrans payment after checkout
   useEffect(() => {
     if (createResponse) {
+      const checkout_id = createResponse.data.id || createResponse.data.checkout_id;
+      const gross_amount = grandTotal;
+      createPayment({ checkout_id, gross_amount });
       resetCheckoutStatus();
-      router.push("/user/checkout/succes"); // ✅ redirect ke page streetwear success
     }
-  }, [createResponse, resetCheckoutStatus, router]);
+    // eslint-disable-next-line
+  }, [createResponse]);
+
+  // Open Snap popup when snapToken is available
+  useEffect(() => {
+    if (paymentData?.snapToken) {
+      if (typeof window !== "undefined" && window.snap) {
+        window.snap.pay(paymentData.snapToken, {
+          onSuccess: function () {
+            router.push("/user/checkout/success");
+          },
+          onPending: function () {
+            // add pending notification if needed
+          },
+          onError: function () {
+            // add error notification if needed
+          },
+        });
+        clearPayment();
+      }
+    }
+    // eslint-disable-next-line
+  }, [paymentData]);
 
   return (
     <div className="min-h-screen bg-[url('/bg-streetwear.jpg')] bg-cover bg-center flex items-center justify-center p-6">
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* LEFT: CART & SUMMARY */}
         <div className="md:col-span-2 glass-card p-8 rounded-3xl">
           <h1 className="text-3xl font-extrabold uppercase mb-8 text-white tracking-widest">
             Checkout
@@ -173,7 +215,7 @@ export default function CheckoutPage() {
           ) : cartError ? (
             <div className="mb-6 text-red-400">{cartError}</div>
           ) : !cartItems.length ? (
-            <div className="mb-6 text-gray-300 italic">Keranjang kamu kosong.</div>
+            <div className="mb-6 text-gray-300 italic">Your cart is empty.</div>
           ) : (
             <>
               <CheckoutCartList items={cartItems} />
@@ -188,32 +230,12 @@ export default function CheckoutPage() {
             </>
           )}
         </div>
+
+        {/* RIGHT: SHIPPING & PAYMENT */}
         <div className="glass-card p-8 rounded-3xl">
           <h2 className="text-2xl font-bold uppercase mb-6 text-white tracking-widest">
             Shipping & Payment
           </h2>
-
-          {loadingCouriers && (
-            <div className="mb-3 text-xs text-yellow-300 animate-pulse">Loading kurir...</div>
-          )}
-          {couriersError && <div className="mb-3 text-xs text-red-400">{couriersError}</div>}
-
-          {loadingAddresses && (
-            <div className="mb-3 text-xs text-yellow-300 animate-pulse">Loading address...</div>
-          )}
-          {addressError && <div className="mb-3 text-xs text-red-400">{addressError}</div>}
-          {deletingAddress && (
-            <div className="mb-3 text-xs text-yellow-400 animate-pulse">Menghapus alamat...</div>
-          )}
-          {deleteError && <div className="mb-3 text-xs text-red-400">{deleteError}</div>}
-          {updatingAddress && (
-            <div className="mb-3 text-xs text-yellow-400 animate-pulse">Menyimpan perubahan...</div>
-          )}
-          {updateError && <div className="mb-3 text-xs text-red-400">{updateError}</div>}
-          {creatingCheckout && (
-            <div className="mb-3 text-xs text-yellow-300 animate-pulse">Memproses checkout...</div>
-          )}
-          {createError && <div className="mb-3 text-xs text-red-400">{createError}</div>}
 
           <ShippingPaymentForm
             address={selectedAddress}
@@ -229,20 +251,44 @@ export default function CheckoutPage() {
             couriers={couriers}
             loadingCouriers={loadingCouriers}
           />
+
+          {/* Agreement Checkbox */}
+          <div className="mt-6 flex items-center gap-2 text-xs text-yellow-400">
+            <input
+              type="checkbox"
+              id="agree"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="w-4 h-4 accent-yellow-400"
+            />
+            <label htmlFor="agree" className="cursor-pointer select-none">
+              I agree to the{" "}
+              <button
+                type="button"
+                onClick={() => setShowTerms(true)}
+                className="underline hover:text-yellow-300"
+              >
+                HOUSE’S OF RULES
+              </button>{" "}
+              and{" "}
+              <button
+                type="button"
+                onClick={() => setShowPolicy(true)}
+                className="underline hover:text-yellow-300"
+              >
+                SHIPPING POLICY
+              </button>
+            </label>
+          </div>
+
           <button
             type="button"
             className="mt-6 w-full bg-gradient-to-r from-emerald-500 to-yellow-400 text-black font-bold py-4 rounded-2xl hover:opacity-90 transition uppercase tracking-wider shadow-lg"
             onClick={handleCheckout}
-            disabled={creatingCheckout || loadingCart || !cartItems.length}
+            disabled={!agreed || creatingCheckout || loadingCart || !cartItems.length}
           >
-            {creatingCheckout ? "Memproses..." : "Pay Now"}
+            {creatingCheckout ? "Processing..." : "Pay Now"}
           </button>
-
-          <div className="mt-4 flex flex-col gap-1 text-yellow-400 font-mono text-xs tracking-widest text-center">
-            <button type="button" onClick={() => setShowTerms(true)} className="hover:underline">
-              HOUSE'S OF RULES
-            </button>
-          </div>
         </div>
       </div>
 

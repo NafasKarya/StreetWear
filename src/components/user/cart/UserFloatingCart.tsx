@@ -120,11 +120,6 @@ export default function UserFloatingCart() {
               ) : cart && cart.length === 0 ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-4 min-h-[340px]">
                   <div className="w-full flex justify-center">
-                    <img
-                      src="https://nafaskarya-bucket.oss-ap-southeast-5.aliyuncs.com/images/bagian wave nya jang.png"
-                      alt="Futuristic Streetwear Elegance"
-                      className="max-h-60 object-contain rounded-lg opacity-90 mx-auto"
-                    />
                   </div>
                   <p className="italic text-sm text-zinc-300">
                     Your basket is empty.

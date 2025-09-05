@@ -12,8 +12,34 @@ import UserPagination from "./product/UserPagination";
 import { useUserLoggoutStore } from "@/store/user/auth/useUserLoggoutStore";
 import { useUserProduct } from "@/store/user/product/useUserProduct";
 import { UserProduct } from "@/store/type/types";
+import { useUserUnlockProduct } from "@/store/user/product/useUserUnclockProduct";
 
 export default function UserDashboard() {
+  // --- UNLOCK CODE STATE ---
+const {
+  codes: unlockedCodes,   // GANTI DARI "code: unlockedCode"
+  loading: unlockLoading,
+  error: unlockError,
+  success: unlockSuccess,
+  unlockProduct,
+  reset: resetUnlock,
+} = useUserUnlockProduct();
+
+
+  // SSR PATCH
+const [inputCode, setInputCode] = useState("");
+useEffect(() => {
+  setInputCode(
+    unlockedCodes.length
+      ? unlockedCodes[unlockedCodes.length - 1]
+      : (typeof window !== "undefined"
+        ? (JSON.parse(localStorage.getItem("user_unlock_code") || "[]")[0] ?? "")
+        : "")
+  );
+}, [unlockedCodes]);
+;
+
+  // --- PRODUCT, SEARCH, ETC ---
   const { error: logoutError, isSuccess, resetLogoutState } = useUserLoggoutStore();
   const router = useRouter();
 
@@ -24,10 +50,21 @@ export default function UserDashboard() {
 
   const { products, error: productError, fetchProducts } = useUserProduct();
 
+  // --- EFFECTS ---
   useEffect(() => {
     resetLogoutState();
     fetchProducts();
   }, [resetLogoutState, fetchProducts]);
+
+  // Refetch produk setelah sukses unlock
+  useEffect(() => {
+    if (unlockSuccess) {
+      fetchProducts();
+      setTimeout(() => {
+        resetUnlock();
+      }, 2000);
+    }
+  }, [unlockSuccess, fetchProducts, resetUnlock]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -42,6 +79,7 @@ export default function UserDashboard() {
     }
   }, [productError, router]);
 
+  // --- FILTERING ---
   const filtered = useMemo(() => {
     let result = products as UserProduct[];
     if (searchQuery.trim()) {
@@ -83,7 +121,8 @@ export default function UserDashboard() {
   }, [paginated]);
 
   const handleClickProduct = useCallback(
-    (uuid: string) => {
+    (uuid: string, isLocked?: boolean) => {
+      if (isLocked) return; // Jangan bisa klik kalau locked
       setLoadingUuid(uuid);
       setTimeout(() => {
         router.push(`/user/products/${uuid}`);
@@ -92,6 +131,17 @@ export default function UserDashboard() {
     [router]
   );
 
+  // --- UNLOCK FORM LOGIC ---
+  const handleUnlock = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (inputCode.trim() === "") return;
+      await unlockProduct(inputCode.trim());
+    },
+    [inputCode, unlockProduct]
+  );
+
+  // ===== RENDER =====
   return (
     <div className="min-h-screen relative flex flex-col items-center justify-start px-6 py-12 text-white">
       <div className="absolute inset-0 -z-10">
@@ -109,6 +159,32 @@ export default function UserDashboard() {
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-12">
           <UserHeader />
         </header>
+
+        {/* === FORM UNLOCK PRODUK TERSEMBUNYI === */}
+        <form onSubmit={handleUnlock} className="mb-4 flex items-center gap-2 w-full max-w-sm">
+          <input
+            type="text"
+            className="rounded-lg px-3 py-2 bg-zinc-900 text-white border border-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 flex-1"
+            placeholder="Masukkan Kode Produk Tersembunyi..."
+            value={inputCode}
+            onChange={(e) => setInputCode(e.target.value)}
+            disabled={unlockLoading}
+            autoFocus
+          />
+          <button
+            type="submit"
+            className="px-4 py-2 bg-yellow-500 text-black rounded-lg font-semibold hover:bg-yellow-400 active:scale-95 transition"
+            disabled={unlockLoading || !inputCode.trim()}
+          >
+            {unlockLoading ? "Unlocking..." : "Unlock"}
+          </button>
+        </form>
+        {unlockError && (
+          <div className="mb-2 text-sm text-red-400 font-medium">{unlockError}</div>
+        )}
+        {unlockSuccess && (
+          <div className="mb-2 text-sm text-green-400 font-medium">Produk hidden sudah kebuka! 🎉</div>
+        )}
 
         {logoutError && (
           <div className="mb-4 bg-red-100 text-red-700 p-3 rounded text-sm text-left max-w-lg">
@@ -137,12 +213,6 @@ export default function UserDashboard() {
         <main>
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-4 text-zinc-300 mt-20">
-              <img
-                src="https://nafaskarya-bucket.oss-ap-southeast-5.aliyuncs.com/images/Ilustrasi karakter s.png"
-                alt="Wave Kosong"
-                className="w-32 sm:w-44 md:w-56 max-w-xs h-auto object-contain"
-                style={{ opacity: 0.85 }}
-              />
               <p className="italic text-base mt-2 text-zinc-400">
                 Ain’t no products here, mate.
               </p>
@@ -157,16 +227,14 @@ export default function UserDashboard() {
                   <ul className="grid grid-cols-2 lg:grid-cols-3 gap-6">
                     <Suspense fallback={<li>Loading products...</li>}>
                       {group.map((product, index) => (
-                        <li
-                          key={product.uuid || product.id}
-                          className="flex flex-col"
-                        >
+                        <li key={product.uuid || product.id} className="flex flex-col">
                           <UserProductItem
                             product={product}
                             index={index}
-                            onClick={() => handleClickProduct(product.uuid)}
+                            isLocked={product.is_locked} // LANGSUNG AMBIL DARI BE
+                            onClick={() => handleClickProduct(product.uuid, product.is_locked)}
                             isLoading={loadingUuid === product.uuid}
-                            disabled={!!loadingUuid}
+                            disabled={!!loadingUuid || product.is_locked}
                           />
                         </li>
                       ))}
@@ -177,17 +245,15 @@ export default function UserDashboard() {
             </div>
           )}
 
-{filtered.length > 0 && totalPages > 1 && (
-  <UserPagination
-    totalPages={totalPages}
-    currentPage={currentPage}
-    setCurrentPage={setCurrentPage}
-  />
-)}
-
+          {filtered.length > 0 && totalPages > 1 && (
+            <UserPagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
+          )}
         </main>
       </div>
-
       <Suspense fallback={null}>
         <UserFloatingCart />
       </Suspense>

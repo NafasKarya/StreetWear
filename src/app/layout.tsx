@@ -1,8 +1,8 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/provider/provider";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     locale: "id_ID",
     images: [
       {
-        url: "https://fourteendency.nafaskarya.my.id/og-image.png", // <-- ganti ke OG image yang lo punya
+        url: "https://fourteendency.nafaskarya.my.id/og-image.png",
         width: 1200,
         height: 630,
         alt: "Fourteendency Streetwear",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     title: "Fourteendency • Streetwear Yogyakarta",
     description: "Brand streetwear modern dari Yogyakarta.",
     images: [
-      "https://fourteendency.nafaskarya.my.id/og-image.png", // <-- samain ama OG image di atas
+      "https://fourteendency.nafaskarya.my.id/og-image.png",
     ],
   },
   icons: {
@@ -61,6 +61,11 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Script
+          src="https://app.sandbox.midtrans.com/snap/snap.js"
+          data-client-key="Mid-client-jjsZxBcR_luxlQJS"
+          strategy="beforeInteractive"
+        />
         <Providers>
           {children}
         </Providers>

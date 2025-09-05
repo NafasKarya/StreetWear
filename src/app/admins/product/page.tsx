@@ -21,6 +21,10 @@ export default function AdminUploadPage() {
   const [category, setCategory] = useState("");
   const [expiresAt, setExpiresAt] = useState(""); // datetime-local
 
+  // Hidden product fields
+  const [hiddenCode, setHiddenCode] = useState("");
+  const [autoHiddenCode, setAutoHiddenCode] = useState(false);
+
   // Sizes
   const [sizes, setSizes] = useState<SizeRow[]>([{ label: "", stock: 0, price: 0 }]);
 
@@ -80,6 +84,11 @@ export default function AdminUploadPage() {
       )
     );
     if (expiresAt) form.append("expiresAt", new Date(expiresAt).toISOString());
+
+    // ===== Tambahan produk hidden =====
+    if (hiddenCode.trim()) form.append("hidden_code", hiddenCode.trim());
+    if (autoHiddenCode) form.append("auto_hidden_code", "true");
+    // ==================================
 
     setLoading(true);
     try {
@@ -258,6 +267,32 @@ export default function AdminUploadPage() {
               )}
             </div>
           ))}
+        </section>
+
+        {/* Produk Hidden */}
+        <section className="p-4 rounded border border-yellow-400/30 bg-white/5">
+          <label className="block font-bold text-yellow-400 mb-2">Kode Produk Hidden (Opsional)</label>
+          <input
+            type="text"
+            value={hiddenCode}
+            onChange={(e) => setHiddenCode(e.target.value)}
+            placeholder="Bisa dikosongkan kalau produk publik"
+            className="w-full px-3 py-2 rounded bg-black border border-yellow-400/40 mb-2"
+          />
+          <div className="flex items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              id="autoHiddenCode"
+              checked={autoHiddenCode}
+              onChange={() => setAutoHiddenCode((x) => !x)}
+            />
+            <label htmlFor="autoHiddenCode" className="text-gray-400">
+              Random kode otomatis (biarkan kosong kalau manual)
+            </label>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Jika diisi, produk hanya bisa diakses pakai kode ini. Centang untuk generate random otomatis (kode akan dikirim di respons).
+          </p>
         </section>
 
         {/* Submit */}
