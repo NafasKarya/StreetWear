@@ -8,6 +8,10 @@ import {
   ADMIN_SHOW_PRODUCT_URL,
 } from "@/config/api-endpoints";
 import { Product, StoreProductPayload } from "@/store/type/types";
+import { unlockCodeFor } from "@/helper/unlockedHiddenCodes";
+
+// === Tambah: import helper
+
 
 interface ErrorResponse {
   message: string;
@@ -25,7 +29,7 @@ interface AdminProductStoreState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   storeProduct: (data: StoreProductPayload) => Promise<void>;
-  getAdminProducts: (search?: string, selectedCategory?: string) => Promise<void>; // <= code DIHAPUS
+  getAdminProducts: (search?: string, selectedCategory?: string) => Promise<void>;
   getProductDetail: (uuid: string, code?: string) => Promise<void>;
   deleteProduct: (uuid: string) => Promise<void>;
   getCategoriesFromProducts: () => void;
@@ -158,7 +162,6 @@ export const useAdminProductStore = create<AdminProductStoreState>((set, get) =>
     }
   },
 
-  // === DI SINI YANG DIPERBAIKI ===
   getAdminProducts: async (search = "", selectedCategory = "") => {
     set({ loading: true, error: null });
     try {
@@ -168,7 +171,6 @@ export const useAdminProductStore = create<AdminProductStoreState>((set, get) =>
       const params = new URLSearchParams();
       if (search && search.trim() !== "") params.append("search", search);
       if (selectedCategory) params.append("category", selectedCategory);
-      // === TIDAK ADA params.append("code", ...) lagi ===
 
       if ([...params].length > 0) url += `?${params.toString()}`;
 
@@ -209,13 +211,16 @@ export const useAdminProductStore = create<AdminProductStoreState>((set, get) =>
     set({ categories });
   },
 
-  getProductDetail: async (uuid: string, code = "") => {
+  // === PATCH di sini: jika code kosong, auto ambil dari unlockCodeFor(uuid)
+  getProductDetail: async (uuid: string, code?: string) => {
     set({ loading: true, error: null });
     try {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      // Gunakan code dari param, jika kosong baru ambil dari unlockCodeFor(uuid)
+      let realCode = code || unlockCodeFor(uuid);
       let url = `${ADMIN_SHOW_PRODUCT_URL}/${uuid}`;
-      if (code) url += `?code=${encodeURIComponent(code)}`;
+      if (realCode) url += `?code=${encodeURIComponent(realCode)}`;
 
       const response = await fetch(url, {
         method: "GET",

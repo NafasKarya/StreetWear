@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-
 import Image from "next/image";
 import { Loader2, X, ShoppingCart, CreditCard } from "lucide-react";
 import { ProductSizeInput } from "@/store/type/types";
@@ -13,6 +12,21 @@ interface DetailProductAdminProps {
   onClose?: () => void;
 }
 
+// Helper: ambil/simpan kode unlock per produk
+function getUnlockedCodesMap(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem("unlockedHiddenCodesMap") || "{}");
+  } catch {
+    return {};
+  }
+}
+function saveUnlockedCodesMap(map: Record<string, string>) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("unlockedHiddenCodesMap", JSON.stringify(map));
+  }
+}
+
 export default function DetailProductAdmin({
   productId,
   onClose,
@@ -21,12 +35,16 @@ export default function DetailProductAdmin({
     useAdminProductStore();
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState<ProductSizeInput | null>(
-    null
-  );
+  const [selectedSize, setSelectedSize] = useState<ProductSizeInput | null>(null);
+  const [hiddenCodeInput, setHiddenCodeInput] = useState(""); // <-- input manual (opsional)
+  const [showUnlock, setShowUnlock] = useState(false);
 
+  // GET DETAIL: Kirim kode dari localStorage kalau ada
   useEffect(() => {
-    if (productId) getProductDetail(productId);
+    if (!productId) return;
+    const codeMap = getUnlockedCodesMap();
+    const code = codeMap[productId] || "";
+    getProductDetail(productId, code);
   }, [productId, getProductDetail]);
 
   useEffect(() => {
@@ -36,6 +54,22 @@ export default function DetailProductAdmin({
       setSelectedSize(productDetail.sizes[0]);
     }
   }, [productDetail]);
+
+  // Handler unlock manual (hidden code input, kalau FE mau akses produk hidden)
+  async function handleUnlock() {
+    if (!productId || !hiddenCodeInput.trim()) return;
+    // Panggil getProductDetail pakai kode input
+    await getProductDetail(productId, hiddenCodeInput.trim());
+    // Kalau berhasil (data muncul), simpan ke localStorage map
+    setTimeout(() => {
+      if (useAdminProductStore.getState().productDetail) {
+        const map = getUnlockedCodesMap();
+        map[productId] = hiddenCodeInput.trim();
+        saveUnlockedCodesMap(map);
+        setShowUnlock(false);
+      }
+    }, 400); // dikasih delay bentar biar state update
+  }
 
   if (!productId) return null;
 
@@ -67,9 +101,36 @@ export default function DetailProductAdmin({
           </div>
         )}
 
-        {error && (
-          <div className="flex items-center justify-center text-red-400 font-semibold py-8">
-            {error}
+        {/* SHOW INPUT HIDDEN CODE kalau error "product not found or hidden" */}
+        {!loading && error && (
+          <div className="flex flex-col items-center justify-center text-red-400 font-semibold py-8 gap-3">
+            <span>{error}</span>
+            {!productDetail && (
+              <button
+                className="px-4 py-2 mt-2 rounded-lg border border-yellow-400 text-yellow-400 bg-transparent hover:bg-yellow-400/10 transition"
+                onClick={() => setShowUnlock(v => !v)}
+              >
+                {showUnlock ? "Tutup Unlock" : "Unlock Produk Hidden"}
+              </button>
+            )}
+            {showUnlock && (
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  className="rounded-lg px-3 py-2 text-black bg-white"
+                  value={hiddenCodeInput}
+                  onChange={e => setHiddenCodeInput(e.target.value)}
+                  placeholder="Input hidden code..."
+                  autoFocus
+                />
+                <button
+                  className="rounded-lg bg-yellow-400 px-4 py-2 text-black font-bold"
+                  onClick={handleUnlock}
+                >
+                  Unlock
+                </button>
+              </div>
+            )}
           </div>
         )}
 
