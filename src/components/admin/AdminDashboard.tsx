@@ -10,6 +10,11 @@ import Pagination from "./product/Pagination";
 import AdminHeader from "./header/AdminHeader";
 import CategoryCard from "./upload/category/CategoryCard";
 import { useAdminProductStore } from "@/store/admin/product/useAdminProductStore";
+import AccessCodeBox from "./accessCd/AccessCodeBox";
+
+// --- Tambahkan ini ---
+
+// ----------------------
 
 const BACKGROUND_IMAGES = [
   "https://nafaskarya-bucket.oss-ap-southeast-5.aliyuncs.com/images/admin-bg.png",
@@ -209,6 +214,9 @@ export default function AdminDashboard() {
             </button>
           </div>
         </header>
+
+        {/* Access Code Tools */}
+        <AccessCodeBox />
 
         {/* Hidden Code Input + Reset */}
         <form className="flex items-center gap-2 mb-6" onSubmit={handleUnlock}>
